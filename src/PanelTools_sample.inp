@@ -1,0 +1,19 @@
+clear
+set verbose off
+include PanelTools.gfn
+
+open grunfeld.gdt --quiet
+
+panelinfo()
+
+series invest_pfirst = pfirst(invest)
+series invest_plast = plast(invest)
+series invest_pcum = pcum(invest)
+series invest_pmode = pmode(invest)
+series invest_pquantile = pquantile(invest, 0.5)
+
+series invest_pxmean = pxmean(invest)
+series invest_pxfraction = pxfraction(invest, min(invest))
+series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
+
+print invest invest_* -o --range=1:40

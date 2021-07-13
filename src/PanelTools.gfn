@@ -17,25 +17,98 @@ Collection of (hopefully) useful functions for dealing with panel datasets.
 Compute cumulated value for each panel unit.
 
 Parameters
-
-    y   - series, target series; NAs are replaced by zero before computation.
-
+    y   - series, target series;
 
 Returns
-Series with cumulated sum for each cross-sectional unit.
+Series with cumulated sum for each cross-sectional unit. NAs are replaced by
+zero before cumulating.
 
 
 ## pmode(const series y)
-Compute most frequent value for each cross-sectional unit. Fails in case 'y'
-consists of no valid vaues.
+Compute most frequent value for each cross-sectional unit.
 
 Parameters
-
-    y   - series, target series; NAs are replaced by zero before computation.
-
+    y   - series, target series
 
 Returns
-Series with cumulated sum for each cross-sectional unit.
+Series with most frequent values for each cross-sectional unit. NA values are
+ignored. If all values are NA for a unit, a series consisting only NA values is
+returned for that unit.
+
+
+## pfirst(const series y)
+Compute first valid value for each panel unit.
+
+Parameters
+    y   - series, target series
+
+Returns
+Series with the first valid value of &quot;y&quot; for each cross-sectional unit. If no
+valid values exists for a unit, NA is returned.
+
+
+## plast(const series y)
+Compute last valid value for each panel unit.
+
+Parameters
+    y   - series, target series
+
+Returns
+Series with the last valid value of &quot;y&quot; for each cross-sectional unit. If no
+valid values exists for a unit, NA is returned.
+
+
+## pquantile(const series y, const scalar value &quot;p-th quantile&quot;)
+Compute the p-th quantile for each unit.
+
+Parameters
+    y     - series, target series
+    value - scalar, p-th quantile; must be in the range 0 &lt; value &lt; 1
+
+Returns
+Series with the p-th quantile for each cross-sectional unit. NA values are
+ignored. If all values are NA for a unit, a series consisting only NA values is
+returned for that unit.
+
+
+## pxmean(const series y)
+Compute mean value of &quot;y&quot; across all units per
+time period. Missing values are ignored for computing the mean.
+
+Parameters
+    y        - series, target series
+Returns
+Series with the mean value value across all units per observation. NA values are
+completely ignored and are not counted.
+
+
+## pxfraction(const series y, const scalar value &quot;Value to search&quot;,
+             const bool fraction[FALSE] &quot;Fraction instead of total number&quot;)
+Compute the total number of observations of &quot;value&quot; in &quot;y&quot; across all units per
+time period. Missing values are completely ignored.
+
+Parameters
+    y        - series, target series
+    value    - scalar, Value to search in &quot;y&quot;
+    fraction - bool, if TRUE (=1) compute the fraction of observations taking the
+               value &quot;value&quot;, if FALSE (=0, default) compute the number of
+               observations instead.
+
+Returns
+Series with the respective value across all units per observation. NA values are
+completely ignored and are not counted.
+
+
+## panelinfo()
+Compute basic information about the panel dimension.
+
+Returns
+Nothing.
+
+
+# Changelog
+v0.1 (07-2021)
+- initial version
 </help>
 <depends count="1">
 extra </depends>
@@ -89,7 +162,7 @@ set skip_missing on
 return pexpand(vec(ret))
 </code>
 </gretl-function>
-<gretl-function name="pfraction" type="matrix">
+<gretl-function name="pxfraction" type="series">
  <params count="3">
   <param name="y" type="series" const="true"/>
   <param name="value" type="scalar" const="true">
@@ -100,17 +173,21 @@ return pexpand(vec(ret))
   </param>
  </params>
 <code>/* Compute the total number of observations of &quot;value&quot; in &quot;y&quot; across
-each unit per time period.
+all units per time period. Missing values are completely ignored.
 If fraction is TRUE, the fraction of observations of &quot;value&quot; in &quot;y&quot; across
-each unit per time period is computed, instead.
-return: matrix, T by 1 vector indicating the number of observations
-(or fraction if selected) &quot;value&quot; appears at each time-period across all units. */
+each unit per time period is computed, instead. */
 errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
 errorif(!ok(value), &quot;You can only search for a valid 'value'.&quot;)
+scalar N = $nobs / $pd
 series z = (y == value)
-matrix x = aggregate(z, time, mean)[, 3]
+if fraction
+  matrix x = aggregate(z, time, mean)[, 3]
+else
+  matrix x = aggregate(z, time, sum)[, 3]
+endif
 x = ok(x) ? x : 0
-return x
+x = ones($pd, N) .* x
+return vec(x)
 </code>
 </gretl-function>
 <gretl-function name="pfirst" type="series">
@@ -187,7 +264,25 @@ return pexpand(ret)
 </code>
 </gretl-function>
 <sample-script>
+clear
+set verbose off
+include PanelTools.gfn
 
+open grunfeld.gdt --quiet
+
+panelinfo()
+
+series invest_pfirst = pfirst(invest)
+series invest_plast = plast(invest)
+series invest_pcum = pcum(invest)
+series invest_pmode = pmode(invest)
+series invest_pquantile = pquantile(invest, 0.5)
+
+series invest_pxmean = pxmean(invest)
+series invest_pxfraction = pxfraction(invest, min(invest))
+series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
+
+print invest invest_* -o --range=1:40
 </sample-script>
 </gretl-function-package>
 </gretl-functions>

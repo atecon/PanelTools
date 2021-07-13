@@ -95,13 +95,18 @@ function series pxfraction (const series y,
     scalar N = $nobs / $pd
     series z = (y == value)
 
-    matrix x = aggregate(z, time, mean)[, 3]
+    if fraction
+        matrix x = aggregate(z, time, mean)[, 3]
+    else
+        matrix x = aggregate(z, time, sum)[, 3]
+    endif
     x = ok(x) ? x : 0
 
     x = ones($pd, N) .* x
 
     return vec(x)
 end function
+
 
 
 function series helper_pfirst_plast (const series y, const bool do_plast)

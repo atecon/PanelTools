@@ -107,23 +107,43 @@ bundles Params = null
 Params = Params + _(value = 1, expected = {1; 0; 0; 0;\
                                            1; 0; 0; 0;\
                                            1; 0; 0; 0\
-                                           })
-
+                                           },\
+                    fraction = TRUE)
 Params = Params + _(value = 2, expected = {0; 1; 0; 0;\
                                            0; 1; 0; 0;\
                                            0; 1; 0; 0\
-                                           })
+                                           },\
+                    fraction = TRUE)
 Params = Params + _(value = -1, expected = {0; 0; 0; 0;\
                                            0; 0; 0; 0;\
                                            0; 0; 0; 0\
-                                           })
+                                           },\
+                    fraction = TRUE)
+
+Params = Params + _(value = 1, expected = {2; 0; 0; 0;\
+                                           2; 0; 0; 0;\
+                                           2; 0; 0; 0\
+                                           },\
+                    fraction = FALSE)
+Params = Params + _(value = 2, expected = {0; 2; 0; 0;\
+                                           0; 2; 0; 0;\
+                                           0; 2; 0; 0\
+                                           },\
+                    fraction = FALSE)
+Params = Params + _(value = -1, expected = {0; 0; 0; 0;\
+                                           0; 0; 0; 0;\
+                                           0; 0; 0; 0\
+                                           },\
+                    fraction = FALSE)
 
 function void test_pxfraction (const bundles P, const series y)
     print "Start testing function pxfraction()."
 
     loop foreach i P
         # Given + When
-        series actual = pxfraction(y, P[i].value)
+        series actual = pxfraction(y, P[i].value, P[i].fraction)
+
+        print y actual -o
 
         # Then
         assert(equal_vectors({actual}, P[i].expected) == TRUE)
