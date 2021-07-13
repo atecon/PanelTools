@@ -13,7 +13,7 @@ series invest_pmode = pmode(invest)
 series invest_pquantile = pquantile(invest, 0.5)
 
 series invest_pxmean = pxmean(invest)
-series invest_pxfraction = pxfraction(invest, min(invest))
+series invest_pxfraction = pxfraction(invest, min(invest), FALSE)
 series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
 
 print invest invest_* -o --range=1:40
