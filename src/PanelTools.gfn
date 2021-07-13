@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gretl-functions>
+<gretl-function-package name="PanelTools" minver="2021a">
+<author email="atecon@posteo.de">Artur Tarassow</author>
+<version>0.1</version>
+<date>2021-07-15</date>
+<description>Collection of tools for handling panel data</description>
+<tags>C10</tags>
+<help>
+# PanelTools
+Collection of (hopefully) useful functions for dealing with panel datasets.
+
+
+# Public functions
+
+## pcum(const series y)
+Compute cumulated value for each panel unit.
+
+Parameters
+
+    y   - series, target series; NAs are replaced by zero before computation.
+
+
+Returns
+Series with cumulated sum for each cross-sectional unit.
+
+
+## pmode(const series y)
+Compute most frequent value for each cross-sectional unit. Fails in case 'y'
+consists of no valid vaues.
+
+Parameters
+
+    y   - series, target series; NAs are replaced by zero before computation.
+
+
+Returns
+Series with cumulated sum for each cross-sectional unit.
+</help>
+<depends count="1">
+extra </depends>
+<gretl-function name="pcum" type="series">
+ <params count="1">
+  <param name="y" type="series" const="true"/>
+ </params>
+<code>/* Compute cumulated value for each panel unit.
+return: series, Cumulated sum for each cross-sectional unit. */
+set skip_missing off
+errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
+matrix m = mshape({y}, $pd, ($nobs / $pd))
+# Columns with missing values are ignored. Hence, we replace NAs before
+m = ok(m) ? m : 0
+series x = vec(cum(m))
+set skip_missing on
+return x
+</code>
+</gretl-function>
+<gretl-function name="pquantile" type="series">
+ <params count="2">
+  <param name="y" type="series" const="true"/>
+  <param name="value" type="scalar" const="true">
+<description>p-th quantile</description>
+  </param>
+ </params>
+<code>/* Compute the p-th quantile for each unit. Missing values are ignored
+for computation of the quantile.
+return: series, p-th quantile for each cross-sectional unit. */
+errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
+errorif(value &lt;= 0 || value &gt;= 1.0, &quot;Parameter 'value' must be in the range '0 &lt; value &lt; 1'.&quot;)
+set skip_missing off
+scalar N = $nobs / $pd
+matrix m = mshape({y}, $pd, N)
+matrix ret = mshape(NA, N, 1)
+if sum(missing(m))
+  # Columns may have missing values and quantile() breaks down if
+  # a column only consists of NA values.
+  loop i=1..N
+    matrix mask = ok(m[,i])
+    matrix vals = selifr(m[,i], mask)
+    if nelem(vals)
+      ret[i] = quantile(vals, value) # scalar value
+    endif
+  endloop
+else
+  # faster version
+  matrix ret = quantile(m, value)
+endif
+set skip_missing on
+return pexpand(vec(ret))
+</code>
+</gretl-function>
+<gretl-function name="pfraction" type="matrix">
+ <params count="3">
+  <param name="y" type="series" const="true"/>
+  <param name="value" type="scalar" const="true">
+<description>Value to search</description>
+  </param>
+  <param name="fraction" type="bool" default="0" const="true">
+<description>Fraction instead of total number</description>
+  </param>
+ </params>
+<code>/* Compute the total number of observations of &quot;value&quot; in &quot;y&quot; across
+each unit per time period.
+If fraction is TRUE, the fraction of observations of &quot;value&quot; in &quot;y&quot; across
+each unit per time period is computed, instead.
+return: matrix, T by 1 vector indicating the number of observations
+(or fraction if selected) &quot;value&quot; appears at each time-period across all units. */
+errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
+errorif(!ok(value), &quot;You can only search for a valid 'value'.&quot;)
+series z = (y == value)
+matrix x = aggregate(z, time, mean)[, 3]
+x = ok(x) ? x : 0
+return x
+</code>
+</gretl-function>
+<gretl-function name="pfirst" type="series">
+ <params count="1">
+  <param name="y" type="series" const="true"/>
+ </params>
+<code>/* Compute first valid value for each panel unit. Expand this constant value for each unit to a series. */
+return helper_pfirst_plast(y, FALSE)
+</code>
+</gretl-function>
+<gretl-function name="plast" type="series">
+ <params count="1">
+  <param name="y" type="series" const="true"/>
+ </params>
+<code>/* Compute last valid value for each panel unit. Expand this constant value for each unit to a series. */
+return helper_pfirst_plast(y, TRUE)
+</code>
+</gretl-function>
+<gretl-function name="pmode" type="series">
+ <params count="1">
+  <param name="y" type="series" const="true"/>
+ </params>
+<code>/* Compute most frequent value for each cross-sectional unit.
+return: series, constant value for each cross-sectional unit.
+Dependency: extra.gfn */
+errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
+errorif(!nobs(y), &quot;No valid observations.&quot;)
+set skip_missing off
+scalar N = $nobs / $pd
+matrix m = mshape({y}, $pd, N)
+matrix ret = mshape(NA, N, 1)
+loop i=1..N
+  ret[i] = onemode(m[,i])[1]
+endloop
+set skip_missing on
+return pexpand(ret)
+</code>
+</gretl-function>
+<gretl-function name="pxmean" type="series">
+ <params count="1">
+  <param name="y" type="series" const="true"/>
+ </params>
+<code>/* Compute mean for each time-period across all cross-sectional units. */
+errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
+return pxsum(y) / pxnobs(y)
+</code>
+</gretl-function>
+<gretl-function name="panelinfo" type="void">
+<code>printf &quot;\nINFO: Information on panel dimensions:\n&quot;
+printf &quot;Cross-sectional units = %d\n&quot;,($nobs / $pd)
+printf &quot;Time-dimension %d observations\n\n&quot;, $pd
+</code>
+</gretl-function>
+<gretl-function name="helper_pfirst_plast" type="series" private="1">
+ <params count="2">
+  <param name="y" type="series" const="true"/>
+  <param name="do_plast" type="bool" const="true"/>
+ </params>
+<code>/* Wrapper for pfirst() and plast()
+return: series, respective values. */
+errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
+set skip_missing off
+scalar N = $nobs / $pd
+matrix m = mshape({y}, $pd, N)
+matrix ret = mshape(NA, N, 1)
+loop i=1..N
+  matrix mask = ok(m[,i])
+  matrix vals = selifr(m[,i], mask)
+  scalar idx = do_plast == TRUE ? rows(vals) : 1
+  ret[i] = sum(mask) ? vals[idx] : NA
+endloop
+set skip_missing on
+return pexpand(ret)
+</code>
+</gretl-function>
+<sample-script>
+
+</sample-script>
+</gretl-function-package>
+</gretl-functions>

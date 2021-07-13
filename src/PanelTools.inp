@@ -1,0 +1,158 @@
+function series pcum (const series y)
+    /* Compute cumulated value for each panel unit.
+    return: series, Cumulated sum for each cross-sectional unit. */
+
+    set skip_missing off
+
+    errorif($datatype != 3, "Only for panel dataset.")
+
+    matrix m = mshape({y}, $pd, ($nobs / $pd))
+
+    # Columns with missing values are ignored. Hence, we replace NAs before
+    m = ok(m) ? m : 0
+    series x = vec(cum(m))
+
+    set skip_missing on
+
+    return x
+end function
+
+
+function series pmode (const series y)
+    /* Compute most frequent value for each cross-sectional unit.
+    return: series, constant value for each cross-sectional unit.
+
+    Dependency: extra.gfn */
+
+    errorif($datatype != 3, "Only for panel dataset.")
+    errorif(!nobs(y), "No valid observations.")
+
+    set skip_missing off
+
+    scalar N = $nobs / $pd
+    matrix m = mshape({y}, $pd, N)
+    matrix ret = mshape(NA, N, 1)
+
+    loop i=1..N
+        ret[i] = onemode(m[,i])[1]
+    endloop
+
+    set skip_missing on
+
+    return pexpand(ret)
+end function
+
+
+function series pquantile (const series y,
+                           const scalar value "p-th quantile")
+    /* Compute the p-th quantile for each unit. Missing values are ignored
+    for computation of the quantile.
+    return: series, p-th quantile for each cross-sectional unit. */
+
+    errorif($datatype != 3, "Only for panel dataset.")
+    errorif(value <= 0 || value >= 1.0, "Parameter 'value' must be in the range '0 < value < 1'.")
+
+    set skip_missing off
+
+    scalar N = $nobs / $pd
+    matrix m = mshape({y}, $pd, N)
+    matrix ret = mshape(NA, N, 1)
+
+    if sum(missing(m))
+        # Columns may have missing values and quantile() breaks down if
+        # a column only consists of NA values.
+        loop i=1..N
+            matrix mask = ok(m[,i])
+            matrix vals = selifr(m[,i], mask)
+
+            if nelem(vals)
+                ret[i] = quantile(vals, value) # scalar value
+            endif
+        endloop
+    else
+        # faster version
+        matrix ret = quantile(m, value)
+    endif
+
+    set skip_missing on
+
+    return pexpand(vec(ret))
+end function
+
+
+function series pxfraction (const series y,
+                            const scalar value "Value to search",
+                            const bool fraction[FALSE] "Fraction instead of total number")
+    /* Compute the total number of observations of "value" in "y" across
+    all units per time period. Missing values are completely ignored.
+    If fraction is TRUE, the fraction of observations of "value" in "y" across
+    each unit per time period is computed, instead. */
+
+    errorif($datatype != 3, "Only for panel dataset.")
+    errorif(!ok(value), "You can only search for a valid 'value'.")
+
+
+    scalar N = $nobs / $pd
+    series z = (y == value)
+
+    matrix x = aggregate(z, time, mean)[, 3]
+    x = ok(x) ? x : 0
+
+    x = ones($pd, N) .* x
+
+    return vec(x)
+end function
+
+
+function series helper_pfirst_plast (const series y, const bool do_plast)
+    /* Wrapper for pfirst() and plast()
+    return: series, respective values. */
+
+    errorif($datatype != 3, "Only for panel dataset.")
+
+    set skip_missing off
+
+    scalar N = $nobs / $pd
+    matrix m = mshape({y}, $pd, N)
+    matrix ret = mshape(NA, N, 1)
+
+    loop i=1..N
+        matrix mask = ok(m[,i])
+        matrix vals = selifr(m[,i], mask)
+
+        scalar idx = do_plast == TRUE ? rows(vals) : 1
+        ret[i] = sum(mask) ? vals[idx] : NA
+    endloop
+
+    set skip_missing on
+
+    return pexpand(ret)
+end function
+
+function series pfirst (const series y)
+    /* Compute first valid value for each panel unit. Expand this constant value for each unit to a series. */
+
+    return helper_pfirst_plast(y, FALSE)
+end function
+
+function series plast (const series y)
+    /* Compute last valid value for each panel unit. Expand this constant value for each unit to a series. */
+
+    return helper_pfirst_plast(y, TRUE)
+end function
+
+
+function series pxmean (const series y)
+    /* Compute mean for each time-period across all cross-sectional units. */
+
+    errorif($datatype != 3, "Only for panel dataset.")
+
+    return pxsum(y) / pxnobs(y)
+end function
+
+
+function void panelinfo (void)
+    printf "\nINFO: Information on panel dimensions:\n"
+    printf "Cross-sectional units = %d\n",($nobs / $pd)
+    printf "Time-dimension %d observations\n\n", $pd
+end function

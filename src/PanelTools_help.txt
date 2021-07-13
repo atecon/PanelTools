@@ -1,0 +1,102 @@
+# PanelTools
+Collection of (hopefully) useful functions for dealing with panel datasets.
+
+
+# Public functions
+
+## pcum(const series y)
+Compute cumulated value for each panel unit.
+
+Parameters
+    y   - series, target series;
+
+Returns
+Series with cumulated sum for each cross-sectional unit. NAs are replaced by
+zero before cumulating.
+
+
+## pmode(const series y)
+Compute most frequent value for each cross-sectional unit.
+
+Parameters
+    y   - series, target series
+
+Returns
+Series with most frequent values for each cross-sectional unit. NA values are
+ignored. If all values are NA for a unit, a series consisting only NA values is
+returned for that unit.
+
+
+## pfirst(const series y)
+Compute first valid value for each panel unit.
+
+Parameters
+    y   - series, target series
+
+Returns
+Series with the first valid value of "y" for each cross-sectional unit. If no
+valid values exists for a unit, NA is returned.
+
+
+## plast(const series y)
+Compute last valid value for each panel unit.
+
+Parameters
+    y   - series, target series
+
+Returns
+Series with the last valid value of "y" for each cross-sectional unit. If no
+valid values exists for a unit, NA is returned.
+
+
+## pquantile(const series y, const scalar value "p-th quantile")
+Compute the p-th quantile for each unit.
+
+Parameters
+    y     - series, target series
+    value - scalar, p-th quantile; must be in the range 0 < value < 1
+
+Returns
+Series with the p-th quantile for each cross-sectional unit. NA values are
+ignored. If all values are NA for a unit, a series consisting only NA values is
+returned for that unit.
+
+
+## pxmean(const series y)
+Compute mean value of "y" across all units per
+time period. Missing values are ignored for computing the mean.
+
+Parameters
+    y        - series, target series
+Returns
+Series with the mean value value across all units per observation. NA values are
+completely ignored and are not counted.
+
+
+## pxfraction(const series y, const scalar value "Value to search",
+             const bool fraction[FALSE] "Fraction instead of total number")
+Compute the total number of observations of "value" in "y" across all units per
+time period. Missing values are completely ignored.
+
+Parameters
+    y        - series, target series
+    value    - scalar, Value to search in "y"
+    fraction - bool, if TRUE (=1) compute the fraction of observations taking the
+               value "value", if FALSE (=0, default) compute the number of
+               observations instead.
+
+Returns
+Series with the respective value across all units per observation. NA values are
+completely ignored and are not counted.
+
+
+## panelinfo()
+Compute basic information about the panel dimension.
+
+Returns
+Nothing.
+
+
+# Changelog
+v0.1 (07-2021)
+- initial version
