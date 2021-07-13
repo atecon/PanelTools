@@ -9,3 +9,4 @@ public = pcum pquantile pxfraction pfirst plast pmode pxmean panelinfo
 help = PanelTools_help.txt
 sample-script = PanelTools_sample.inp
 depends = extra
+data-requirement = needs-panel-data
