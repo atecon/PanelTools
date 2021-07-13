@@ -3,7 +3,7 @@
 <gretl-function-package name="PanelTools" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>0.1</version>
-<date>2021-07-15</date>
+<date>2021-07-13</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -279,7 +279,7 @@ series invest_pmode = pmode(invest)
 series invest_pquantile = pquantile(invest, 0.5)
 
 series invest_pxmean = pxmean(invest)
-series invest_pxfraction = pxfraction(invest, min(invest))
+series invest_pxfraction = pxfraction(invest, min(invest), FALSE)
 series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
 
 print invest invest_* -o --range=1:40
