@@ -90,6 +90,18 @@ Series with the respective value across all units per observation. NA values are
 completely ignored and are not counted.
 
 
+## ppolyfit(const series y, const int order[1::])
+Fits a polynomial trend of order "order" to the input series "y" using the method of orthogonal polynomials for each cross-sectional unit separately. This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
+
+Parameters
+    y        - series, target series
+    order    - integer, Order of the polynomial trend
+
+Returns
+Series of fitted values for each unit. In case 'y' has missing values for a
+specific unit, for this unit a time-series with NAs is returned.
+
+
 ## panelinfo()
 Compute basic information about the panel dimension.
 
@@ -98,5 +110,8 @@ Nothing.
 
 
 # Changelog
+v0.2 (07-2021)
+- add new ppolyfit() function
+
 v0.1 (07-2021)
 - initial version

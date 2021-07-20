@@ -17,3 +17,6 @@ series invest_pxfraction = pxfraction(invest, min(invest), FALSE)
 series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
 
 print invest invest_* -o --range=1:40
+
+series invest_poly = ppolyfit(invest, 2)
+print invest invest_poly -o --range=1:40

@@ -2,7 +2,7 @@ set verbose off
 clear
 
 set assert stop
-# include assertion.gfn
+include assertion.gfn
 
 include extra.gfn
 include "./src/PanelTools.inp" --force
@@ -248,10 +248,59 @@ function void test_pmode (const series input, const series expected)
 end function
 test_pmode(y, expected)
 
-
+# TODO: Could test the printed output
 open grunfeld.gdt -q -p
 panelinfo()
 
+
+
+nulldata 8 --preserve
+setobs 4 1:1 --stacked-time-series
+
+bundles Params = null
+Params = Params + _(y = {1; 2; 3; 4; 2; 2; 2; 2},\
+                    expected = {1; 2; 3; 4; 2; 2; 2; 2},\
+                    order = 1)
+Params = Params + _(y = {1; 2; 4; 8; 2; 4; 8; 16},\
+                    expected = {0.3; 2.6; 4.9; 7.2; 0.6; 5.2; 9.8; 14.4},\
+                    order = 2)
+Params = Params + _(y = {1; 2; 3; 4; 2; 2; 2; 2},\
+                    expected = {1; 2; 3; 4; 2; 2; 2; 2},\
+                    order = 3)
+
+Params = Params + _(y = {NA; 2; 3; 4; 2; 2; 2; 2},\
+                    expected = {NA; NA; NA; NA; 2; 2; 2; 2},\
+                    order = 1)
+Params = Params + _(y = {1; 2; 4; NA; 2; 4; 8; 16},\
+                    expected = {NA; NA; NA; NA; 0.6; 5.2; 9.8; 14.4},\
+                    order = 2)
+function void test_ppolyfit (const bundles P)
+    print "Start testing function ppolyfit()."
+
+    loop foreach i P
+        printf "\nCase = %d\n", $i
+
+        # Given
+        series y = P[i].y
+        series expected = P[i].expected
+
+        # When
+        series actual = ppolyfit(y, P[i].order)
+
+        # Then
+        assert_almost_equal_num(sum(actual - expected), 0, 10e-15)
+    endloop
+end function
+test_ppolyfit(Params)
+
+
+
+
+
+
+
 print "Finished all tests succesfully."
 quit
+
+
 

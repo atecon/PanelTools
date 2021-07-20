@@ -158,6 +158,41 @@ end function
 
 function void panelinfo (void)
     printf "\nINFO: Information on panel dimensions:\n"
-    printf "Cross-sectional units = %d\n",($nobs / $pd)
+    printf "Cross-sectional units = %d\n", ($nobs / $pd)
     printf "Time-dimension %d observations\n\n", $pd
+end function
+
+
+function series ppolyfit(const series y, const int order[1::])
+    /* Fits a polynomial trend of order "order" to the input series "y" using the method of orthogonal polynomials for each cross-sectional unit separately.
+    This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
+
+    return: series, fitted values for each unit. In case 'y' has missing values for a specific unit, for this unit a time-series with NAs is returned.
+
+    Function thankfully brought to you Jack Lucchetti.
+    */
+
+    errorif($datatype != 3, "Only for panel dataset. Try to use the polyfit() function, instead.")
+
+    if sum(missing(y))
+        print "WARNING: Series 'y' has missing values. Fitted values for some unit(s) will be NA."
+    endif
+
+    scalar T = $pd
+    scalar N = $nobs / T
+
+    set skip_missing off
+
+    matrix E
+    matrix Y = mshape({y}, T, N)
+    trend = seq(0, (T - 1))'
+
+    matrix X = 1 ~ trend .^ (seq(1, order))
+
+    yhat = mols(Y, X, &E)
+    series ret = vec(Y - E)
+
+    set skip_missing on
+
+    return ret
 end function

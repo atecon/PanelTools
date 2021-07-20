@@ -2,8 +2,8 @@
 <gretl-functions>
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
-<version>0.1</version>
-<date>2021-07-13</date>
+<version>0.2</version>
+<date>2021-07-20</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -99,6 +99,18 @@ Series with the respective value across all units per observation. NA values are
 completely ignored and are not counted.
 
 
+## ppolyfit(const series y, const int order[1::])
+Fits a polynomial trend of order &quot;order&quot; to the input series &quot;y&quot; using the method of orthogonal polynomials for each cross-sectional unit separately. This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
+
+Parameters
+    y        - series, target series
+    order    - integer, Order of the polynomial trend
+
+Returns
+Series of fitted values for each unit. In case 'y' has missing values for a
+specific unit, for this unit a time-series with NAs is returned.
+
+
 ## panelinfo()
 Compute basic information about the panel dimension.
 
@@ -107,6 +119,9 @@ Nothing.
 
 
 # Changelog
+v0.2 (07-2021)
+- add new ppolyfit() function
+
 v0.1 (07-2021)
 - initial version
 </help>
@@ -237,8 +252,35 @@ return pxsum(y) / pxnobs(y)
 </gretl-function>
 <gretl-function name="panelinfo" type="void">
 <code>printf &quot;\nINFO: Information on panel dimensions:\n&quot;
-printf &quot;Cross-sectional units = %d\n&quot;,($nobs / $pd)
+printf &quot;Cross-sectional units = %d\n&quot;, ($nobs / $pd)
 printf &quot;Time-dimension %d observations\n\n&quot;, $pd
+</code>
+</gretl-function>
+<gretl-function name="ppolyfit" type="series">
+ <params count="2">
+  <param name="y" type="series" const="true"/>
+  <param name="order" type="int" min="1" const="true"/>
+ </params>
+<code>/* Fits a polynomial trend of order &quot;order&quot; to the input series &quot;y&quot; using the method of orthogonal polynomials for each cross-sectional unit separately.
+This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
+return: series, fitted values for each unit. In case 'y' has missing values for a specific unit, for this unit a time-series with NAs is returned.
+Function thankfully brought to you Jack Lucchetti.
+*/
+errorif($datatype != 3, &quot;Only for panel dataset. Try to use the polyfit() function, instead.&quot;)
+if sum(missing(y))
+  print &quot;WARNING: Series 'y' has missing values. Fitted values for some unit(s) will be NA.&quot;
+endif
+scalar T = $pd
+scalar N = $nobs / T
+set skip_missing off
+matrix E
+matrix Y = mshape({y}, T, N)
+trend = seq(0, (T - 1))'
+matrix X = 1 ~ trend .^ (seq(1, order))
+yhat = mols(Y, X, &amp;E)
+series ret = vec(Y - E)
+set skip_missing on
+return ret
 </code>
 </gretl-function>
 <gretl-function name="helper_pfirst_plast" type="series" private="1">
@@ -283,6 +325,9 @@ series invest_pxfraction = pxfraction(invest, min(invest), FALSE)
 series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
 
 print invest invest_* -o --range=1:40
+
+series invest_poly = ppolyfit(invest, 2)
+print invest invest_poly -o --range=1:40
 </sample-script>
 </gretl-function-package>
 </gretl-functions>
