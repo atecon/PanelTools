@@ -189,8 +189,11 @@ function series ppolyfit(const series y, const int order[1::])
 
     matrix X = 1 ~ trend .^ (seq(1, order))
 
-    yhat = mols(Y, X, &E)
+    mols(Y, X, &E)
     series ret = vec(Y - E)
+
+    desc = sprintf("polynomial fit of %s (order %d)", argname(y), order)
+    setinfo ret --description="@desc"
 
     set skip_missing on
 

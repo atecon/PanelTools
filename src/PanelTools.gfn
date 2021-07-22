@@ -3,7 +3,7 @@
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>0.2</version>
-<date>2021-07-20</date>
+<date>2021-07-22</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -277,8 +277,10 @@ matrix E
 matrix Y = mshape({y}, T, N)
 trend = seq(0, (T - 1))'
 matrix X = 1 ~ trend .^ (seq(1, order))
-yhat = mols(Y, X, &amp;E)
+mols(Y, X, &amp;E)
 series ret = vec(Y - E)
+desc = sprintf(&quot;polynomial fit of %s (order %d)&quot;, argname(y), order)
+setinfo ret --description=&quot;@desc&quot;
 set skip_missing on
 return ret
 </code>
