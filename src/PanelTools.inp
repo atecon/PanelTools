@@ -10,11 +10,14 @@ function series pcum (const series y)
 
     # Columns with missing values are ignored. Hence, we replace NAs before
     m = ok(m) ? m : 0
-    series x = vec(cum(m))
+    series ret = vec(cum(m))
 
     set skip_missing on
 
-    return x
+    string desc = get_description("pcum", argname(y), -1)
+    setinfo ret --description="@desc"
+
+    return ret
 end function
 
 
@@ -31,15 +34,19 @@ function series pmode (const series y)
 
     scalar N = $nobs / $pd
     matrix m = mshape({y}, $pd, N)
-    matrix ret = mshape(NA, N, 1)
+    matrix mat = mshape(NA, N, 1)
 
     loop i=1..N
-        ret[i] = onemode(m[,i])[1]
+        mat[i] = onemode(m[,i])[1]
     endloop
 
     set skip_missing on
 
-    return pexpand(ret)
+    series ret = pexpand(mat)
+    string desc = get_description("pmode", argname(y), -1)
+    setinfo ret --description="@desc"
+
+    return ret
 end function
 
 
@@ -56,7 +63,7 @@ function series pquantile (const series y,
 
     scalar N = $nobs / $pd
     matrix m = mshape({y}, $pd, N)
-    matrix ret = mshape(NA, N, 1)
+    matrix mat = mshape(NA, N, 1)
 
     if sum(missing(m))
         # Columns may have missing values and quantile() breaks down if
@@ -66,17 +73,21 @@ function series pquantile (const series y,
             matrix vals = selifr(m[,i], mask)
 
             if nelem(vals)
-                ret[i] = quantile(vals, value) # scalar value
+                mat[i] = quantile(vals, value) # scalar value
             endif
         endloop
     else
         # faster version
-        matrix ret = quantile(m, value)
+        matrix mat = quantile(m, value)
     endif
 
     set skip_missing on
 
-    return pexpand(vec(ret))
+    series ret = pexpand(vec(mat))
+    string desc = get_description("pquantile", argname(y), value)
+    setinfo ret --description="@desc"
+
+    return ret
 end function
 
 
@@ -104,7 +115,12 @@ function series pxfraction (const series y,
 
     x = ones($pd, N) .* x
 
-    return vec(x)
+    series ret = vec(x)
+
+    string desc = get_description("pxfraction", argname(y), value)
+    setinfo ret --description="@desc"
+
+    return ret
 end function
 
 
@@ -137,13 +153,24 @@ end function
 function series pfirst (const series y)
     /* Compute first valid value for each panel unit. Expand this constant value for each unit to a series. */
 
-    return helper_pfirst_plast(y, FALSE)
+    series ret = helper_pfirst_plast(y, FALSE)
+
+    string desc = get_description("pfirst", argname(y), -1)
+    setinfo ret --description="@desc"
+
+    return ret
 end function
+
 
 function series plast (const series y)
     /* Compute last valid value for each panel unit. Expand this constant value for each unit to a series. */
 
-    return helper_pfirst_plast(y, TRUE)
+    series ret = helper_pfirst_plast(y, TRUE)
+
+    string desc = get_description("plast", argname(y), -1)
+    setinfo ret --description="@desc"
+
+    return ret
 end function
 
 
@@ -152,7 +179,12 @@ function series pxmean (const series y)
 
     errorif($datatype != 3, "Only for panel dataset.")
 
-    return pxsum(y) / pxnobs(y)
+    series ret = pxsum(y) / pxnobs(y)
+
+    string desc = get_description("pxmean", argname(y), -1)
+    setinfo ret --description="@desc"
+
+    return ret
 end function
 
 
@@ -192,10 +224,33 @@ function series ppolyfit(const series y, const int order[1::])
     mols(Y, X, &E)
     series ret = vec(Y - E)
 
-    desc = sprintf("polynomial fit of %s (order %d)", argname(y), order)
+    string desc = get_description("ppolyfit", argname(y), order)
     setinfo ret --description="@desc"
 
     set skip_missing on
 
     return ret
+end function
+
+
+function string get_description (const string fname,
+                                 const string yname,
+                                 scalar value)
+    /* Retrieve series' description.
+    return: string */
+
+    scalar value = !exists(value) ? 1 : value
+
+    bundle B = _(\
+                 ppolyfit = sprintf("polynomial fit of %s (order=%d)", yname, value),\
+                pcum = sprintf("cumuluated values of %s", yname),\
+                pquantile = sprintf("quantile (q=%g) values of %s", value, yname),\
+                pxfraction = sprintf("cross-sectional fractions of %s (value=%g)", yname, value),\
+                pfirst = sprintf("first valid values of %s", yname),\
+                plast = sprintf("last valid values of %s", yname),\
+                pmode = sprintf("modes of %s", yname),\
+                pxmean = sprintf("cross-sectional means of %s", yname)\
+                )
+
+    return B["@fname"]
 end function

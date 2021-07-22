@@ -138,9 +138,11 @@ errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
 matrix m = mshape({y}, $pd, ($nobs / $pd))
 # Columns with missing values are ignored. Hence, we replace NAs before
 m = ok(m) ? m : 0
-series x = vec(cum(m))
+series ret = vec(cum(m))
 set skip_missing on
-return x
+string desc = get_description(&quot;pcum&quot;, argname(y), -1)
+setinfo ret --description=&quot;@desc&quot;
+return ret
 </code>
 </gretl-function>
 <gretl-function name="pquantile" type="series">
@@ -158,7 +160,7 @@ errorif(value &lt;= 0 || value &gt;= 1.0, &quot;Parameter 'value' must be in the
 set skip_missing off
 scalar N = $nobs / $pd
 matrix m = mshape({y}, $pd, N)
-matrix ret = mshape(NA, N, 1)
+matrix mat = mshape(NA, N, 1)
 if sum(missing(m))
   # Columns may have missing values and quantile() breaks down if
   # a column only consists of NA values.
@@ -166,15 +168,18 @@ if sum(missing(m))
     matrix mask = ok(m[,i])
     matrix vals = selifr(m[,i], mask)
     if nelem(vals)
-      ret[i] = quantile(vals, value) # scalar value
+      mat[i] = quantile(vals, value) # scalar value
     endif
   endloop
 else
   # faster version
-  matrix ret = quantile(m, value)
+  matrix mat = quantile(m, value)
 endif
 set skip_missing on
-return pexpand(vec(ret))
+series ret = pexpand(vec(mat))
+string desc = get_description(&quot;pquantile&quot;, argname(y), value)
+setinfo ret --description=&quot;@desc&quot;
+return ret
 </code>
 </gretl-function>
 <gretl-function name="pxfraction" type="series">
@@ -202,7 +207,10 @@ else
 endif
 x = ok(x) ? x : 0
 x = ones($pd, N) .* x
-return vec(x)
+series ret = vec(x)
+string desc = get_description(&quot;pxfraction&quot;, argname(y), value)
+setinfo ret --description=&quot;@desc&quot;
+return ret
 </code>
 </gretl-function>
 <gretl-function name="pfirst" type="series">
@@ -210,7 +218,10 @@ return vec(x)
   <param name="y" type="series" const="true"/>
  </params>
 <code>/* Compute first valid value for each panel unit. Expand this constant value for each unit to a series. */
-return helper_pfirst_plast(y, FALSE)
+series ret = helper_pfirst_plast(y, FALSE)
+string desc = get_description(&quot;pfirst&quot;, argname(y), -1)
+setinfo ret --description=&quot;@desc&quot;
+return ret
 </code>
 </gretl-function>
 <gretl-function name="plast" type="series">
@@ -218,7 +229,10 @@ return helper_pfirst_plast(y, FALSE)
   <param name="y" type="series" const="true"/>
  </params>
 <code>/* Compute last valid value for each panel unit. Expand this constant value for each unit to a series. */
-return helper_pfirst_plast(y, TRUE)
+series ret = helper_pfirst_plast(y, TRUE)
+string desc = get_description(&quot;plast&quot;, argname(y), -1)
+setinfo ret --description=&quot;@desc&quot;
+return ret
 </code>
 </gretl-function>
 <gretl-function name="pmode" type="series">
@@ -233,12 +247,15 @@ errorif(!nobs(y), &quot;No valid observations.&quot;)
 set skip_missing off
 scalar N = $nobs / $pd
 matrix m = mshape({y}, $pd, N)
-matrix ret = mshape(NA, N, 1)
+matrix mat = mshape(NA, N, 1)
 loop i=1..N
-  ret[i] = onemode(m[,i])[1]
+  mat[i] = onemode(m[,i])[1]
 endloop
 set skip_missing on
-return pexpand(ret)
+series ret = pexpand(mat)
+string desc = get_description(&quot;pmode&quot;, argname(y), -1)
+setinfo ret --description=&quot;@desc&quot;
+return ret
 </code>
 </gretl-function>
 <gretl-function name="pxmean" type="series">
@@ -247,7 +264,10 @@ return pexpand(ret)
  </params>
 <code>/* Compute mean for each time-period across all cross-sectional units. */
 errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
-return pxsum(y) / pxnobs(y)
+series ret = pxsum(y) / pxnobs(y)
+string desc = get_description(&quot;pxmean&quot;, argname(y), -1)
+setinfo ret --description=&quot;@desc&quot;
+return ret
 </code>
 </gretl-function>
 <gretl-function name="panelinfo" type="void">
@@ -279,7 +299,7 @@ trend = seq(0, (T - 1))'
 matrix X = 1 ~ trend .^ (seq(1, order))
 mols(Y, X, &amp;E)
 series ret = vec(Y - E)
-desc = sprintf(&quot;polynomial fit of %s (order %d)&quot;, argname(y), order)
+string desc = get_description(&quot;ppolyfit&quot;, argname(y), order)
 setinfo ret --description=&quot;@desc&quot;
 set skip_missing on
 return ret
@@ -305,6 +325,19 @@ loop i=1..N
 endloop
 set skip_missing on
 return pexpand(ret)
+</code>
+</gretl-function>
+<gretl-function name="get_description" type="string" private="1">
+ <params count="3">
+  <param name="fname" type="string" const="true"/>
+  <param name="yname" type="string" const="true"/>
+  <param name="value" type="scalar"/>
+ </params>
+<code>/* Retrieve series' description.
+return: string */
+scalar value = !exists(value) ? 1 : value
+bundle B = _( ppolyfit = sprintf(&quot;polynomial fit of %s (order=%d)&quot;, yname, value), pcum = sprintf(&quot;cumuluated values of %s&quot;, yname), pquantile = sprintf(&quot;quantile (q=%g) values of %s&quot;, value, yname), pxfraction = sprintf(&quot;cross-sectional fractions of %s (value=%g)&quot;, yname, value), pfirst = sprintf(&quot;first valid values of %s&quot;, yname), plast = sprintf(&quot;last valid values of %s&quot;, yname), pmode = sprintf(&quot;modes of %s&quot;, yname), pxmean = sprintf(&quot;cross-sectional means of %s&quot;, yname) )
+return B[&quot;@fname&quot;]
 </code>
 </gretl-function>
 <sample-script>
