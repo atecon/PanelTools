@@ -91,7 +91,7 @@ completely ignored and are not counted.
 
 
 ## ppolyfit(const series y, const int order[1::])
-Fits a polynomial trend of order "order" to the input series "y" using the method of orthogonal polynomials for each cross-sectional unit separately. This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
+Fits a polynomial trend of order "order" to the input series "y" using OLS for each cross-sectional unit separately. This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
 
 Parameters
     y        - series, target series
