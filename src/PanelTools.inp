@@ -341,15 +341,8 @@ function matrix drop_constants (const matrix m)
     /* Drop columns which are constant over its entire length.
     return: matrix, Columns which are not constant over its entire length. */
 
-    matrix x = {}
-
-    loop i=1..cols(m)
-        if isconst(m[,i]) == FALSE
-            x ~= m[,i]
-        endif
-    endloop
-
-    return x
+    matrix mask = (sdc(m) .!= 0)
+    return selifc(m, mask)
 end function
 
 
