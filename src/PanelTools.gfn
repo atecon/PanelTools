@@ -2,8 +2,8 @@
 <gretl-functions>
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
-<version>0.2</version>
-<date>2021-07-22</date>
+<version>0.3</version>
+<date>2021-07-23</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -118,7 +118,39 @@ Returns
 Nothing.
 
 
+## mpmean(const matrix m, const int N)
+Compute vector of mean values of &quot;m&quot; for each cross-sectional unit. Matrix
+equivalent to gretl's built-in pmean() function. Missing values are ignored.
+
+Parameters
+    m        - matrix, Column vector of dimension T*N
+    N        - int, Number of cross-sectional units
+
+Returns
+Matrix of stacked time-series of means of &quot;m&quot; for each unit. NA values are
+completely ignored.
+
+
+
+## fe_estimator (const matrix y, const matrix X, const int N[1::])
+Matrix-based equivalent of gretl's built-in fixed-effect panel estimator.
+Currently no inference is done.
+
+Parameters
+    y        - matrix, Column vector of stacked time-series
+    X        - matrix, Matrix of regressors of stacked time-series
+    N        - integer, Number of cross-sectional units
+
+Returns
+Bundle object comprising both point estimates of coefficients (key: &quot;coeff&quot;) and
+estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
+
+
+
 # Changelog
+v0.3 (07-2021)
+- add new mpmean() and fe_estimator() functions
+
 v0.2 (07-2021)
 - add new ppolyfit() function
 
@@ -305,6 +337,53 @@ set skip_missing on
 return ret
 </code>
 </gretl-function>
+<gretl-function name="mpmean" type="matrix">
+ <params count="2">
+  <param name="m" type="matrix"/>
+  <param name="N" type="int" const="true"/>
+ </params>
+<code>/* Compute vector of mean values of the column vector &quot;m&quot; for each
+cross-sectional unit. Matrix equivalent to gretl's built-in pmean() function.
+return: matrix, Stacked time-series of means of &quot;m&quot;. */
+set skip_missing off
+scalar T = rows(m) / N
+matrix x = mshape(NA, (N * T), cols(m))
+matrix unity = ones(T, N)
+loop i=1..cols(m)
+  x[,i] = vec( unity .* meanc_robust(mshape(m[,i], T, N)) )
+endloop
+set skip_missing on
+return x
+</code>
+</gretl-function>
+<gretl-function name="fe_estimator" type="bundle">
+ <params count="3">
+  <param name="y" type="matrix" const="true"/>
+  <param name="X" type="matrix" const="true"/>
+  <param name="N" type="int" min="1" const="true">
+<description>Number of cross-sectional units</description>
+  </param>
+ </params>
+<code>/* Fixed-effects estimation using matrices.
+return: bundle, Model output. */
+set skip_missing off
+bundle B = null
+scalar B.T = rows(y) / N
+scalar B.N = N
+string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : &quot;&quot;
+strings B.parnames = cnameget(X)
+matrix mybar = mpmean(y, N)
+matrix mx = drop_constants(X)
+matrix mxbar = mpmean(mx, N)
+matrix endog = y .- mybar
+matrix exog = mx .- mxbar
+matrix B.coeff = mols(endog, exog)
+rnameset(B.coeff, cnameget(X))
+matrix B.ahat = get_ahat(mybar, mxbar, B)
+set skip_missing on
+return B
+</code>
+</gretl-function>
 <gretl-function name="helper_pfirst_plast" type="series" private="1">
  <params count="2">
   <param name="y" type="series" const="true"/>
@@ -338,6 +417,51 @@ return: string */
 scalar value = !exists(value) ? 1 : value
 bundle B = _( ppolyfit = sprintf(&quot;polynomial fit of %s (order=%d)&quot;, yname, value), pcum = sprintf(&quot;cumuluated values of %s&quot;, yname), pquantile = sprintf(&quot;quantile (q=%g) values of %s&quot;, value, yname), pxfraction = sprintf(&quot;cross-sectional fractions of %s (value=%g)&quot;, yname, value), pfirst = sprintf(&quot;first valid values of %s&quot;, yname), plast = sprintf(&quot;last valid values of %s&quot;, yname), pmode = sprintf(&quot;modes of %s&quot;, yname), pxmean = sprintf(&quot;cross-sectional means of %s&quot;, yname) )
 return B[&quot;@fname&quot;]
+</code>
+</gretl-function>
+<gretl-function name="meanc_robust" type="matrix" private="1">
+ <params count="1">
+  <param name="X" type="matrix" const="true"/>
+ </params>
+<code>/* Compute mean values for each column even in case of missing values. */
+matrix B = ok(X)
+return sumc(B ? X : 0) ./ sumc(B)
+</code>
+</gretl-function>
+<gretl-function name="get_ahat" type="matrix" private="1">
+ <params count="3">
+  <param name="mybar" type="matrix" const="true">
+<description>Unit-specific mean of 'y'</description>
+  </param>
+  <param name="mxbar" type="matrix" const="true">
+<description>Unit-specific means of 'x' per columns</description>
+  </param>
+  <param name="self" type="bundle" const="true"/>
+ </params>
+<code>/* Compute fixed-effects.
+return: matrix, Column vector with fixed-effects as stacked time-series. */
+mybar_values = vec(mshape(mybar, self.T, self.N)[1,]) # N by 1
+matrix x = mshape(NA, self.N, cols(mxbar))
+loop i=1..cols(mxbar)
+  x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,])
+endloop
+matrix ahat = mybar_values .- (x * self.coeff)
+return vec(ones(self.T, self.N) .* ahat')
+</code>
+</gretl-function>
+<gretl-function name="drop_constants" type="matrix" private="1">
+ <params count="1">
+  <param name="m" type="matrix" const="true"/>
+ </params>
+<code>/* Drop columns which are constant over its entire length.
+return: matrix, Columns which are not constant over its entire length. */
+matrix x = {}
+loop i=1..cols(m)
+  if isconst(m[,i]) == FALSE
+    x ~= m[,i]
+  endif
+endloop
+return x
 </code>
 </gretl-function>
 <sample-script>

@@ -254,3 +254,102 @@ function string get_description (const string fname,
 
     return B["@fname"]
 end function
+
+
+function matrix meanc_robust (const matrix X)
+    /* Compute mean values for each column even in case of missing values. */
+
+    matrix B = ok(X)
+    return sumc(B ? X : 0) ./ sumc(B)
+end function
+
+
+function matrix mpmean (matrix m, const int N)
+    /* Compute vector of mean values of the column vector "m" for each
+    cross-sectional unit. Matrix equivalent to gretl's built-in pmean() function.
+
+    return: matrix, Stacked time-series of means of "m". */
+
+    set skip_missing off
+
+    scalar T = rows(m) / N
+
+    matrix x = mshape(NA, (N * T), cols(m))
+    matrix unity = ones(T, N)
+
+    loop i=1..cols(m)
+        x[,i] = vec( unity .* meanc_robust(mshape(m[,i], T, N)) )
+    endloop
+    set skip_missing on
+
+    return x
+end function
+
+
+### Fixed-effects estimator
+function matrix get_ahat (const matrix mybar "Unit-specific mean of 'y'",
+                          const matrix mxbar "Unit-specific means of 'x' per columns",
+                          const bundle self)
+    /* Compute fixed-effects.
+    return: matrix, Column vector with fixed-effects as stacked time-series. */
+
+    mybar_values = vec(mshape(mybar, self.T, self.N)[1,]) # N by 1
+    matrix x = mshape(NA, self.N, cols(mxbar))
+
+    loop i=1..cols(mxbar)
+        x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,])
+    endloop
+
+    matrix ahat = mybar_values .- (x * self.coeff)
+
+    return vec(ones(self.T, self.N) .* ahat')
+end function
+
+
+function bundle fe_estimator (const matrix y,
+                              const matrix X,
+                              const int N[1::] "Number of cross-sectional units")
+    /* Fixed-effects estimation using matrices.
+    return: bundle, Model output. */
+
+    set skip_missing off
+
+    bundle B = null
+    scalar B.T = rows(y) / N
+    scalar B.N = N
+    string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : ""
+    strings B.parnames = cnameget(X)
+
+    matrix mybar = mpmean(y, N)
+    matrix mx = drop_constants(X)
+    matrix mxbar = mpmean(mx, N)
+    matrix endog = y .- mybar
+    matrix exog = mx .- mxbar
+
+    matrix B.coeff = mols(endog, exog)
+    rnameset(B.coeff, cnameget(X))
+
+    matrix B.ahat = get_ahat(mybar, mxbar, B)
+
+    set skip_missing on
+
+    return B
+end function
+
+
+function matrix drop_constants (const matrix m)
+    /* Drop columns which are constant over its entire length.
+    return: matrix, Columns which are not constant over its entire length. */
+
+    matrix x = {}
+
+    loop i=1..cols(m)
+        if isconst(m[,i]) == FALSE
+            x ~= m[,i]
+        endif
+    endloop
+
+    return x
+end function
+
+

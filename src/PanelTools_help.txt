@@ -109,7 +109,39 @@ Returns
 Nothing.
 
 
+## mpmean(const matrix m, const int N)
+Compute vector of mean values of "m" for each cross-sectional unit. Matrix
+equivalent to gretl's built-in pmean() function. Missing values are ignored.
+
+Parameters
+    m        - matrix, Column vector of dimension T*N
+    N        - int, Number of cross-sectional units
+
+Returns
+Matrix of stacked time-series of means of "m" for each unit. NA values are
+completely ignored.
+
+
+
+## fe_estimator (const matrix y, const matrix X, const int N[1::])
+Matrix-based equivalent of gretl's built-in fixed-effect panel estimator.
+Currently no inference is done.
+
+Parameters
+    y        - matrix, Column vector of stacked time-series
+    X        - matrix, Matrix of regressors of stacked time-series
+    N        - integer, Number of cross-sectional units
+
+Returns
+Bundle object comprising both point estimates of coefficients (key: "coeff") and
+estimated fixed-effects stored as stacked time-series (key: "ahat").
+
+
+
 # Changelog
+v0.3 (07-2021)
+- add new mpmean() and fe_estimator() functions
+
 v0.2 (07-2021)
 - add new ppolyfit() function
 
