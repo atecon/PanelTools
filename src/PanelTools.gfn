@@ -373,10 +373,10 @@ scalar B.N = N
 string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : &quot;&quot;
 strings B.parnames = cnameget(X)
 matrix mybar = mpmean(y, N)
-matrix mx = drop_constants(X)
-matrix mxbar = mpmean(mx, N)
+matrix mxbar = mpmean(X, N)
 matrix endog = y .- mybar
-matrix exog = mx .- mxbar
+matrix exog = X .- mxbar
+matrix exog = drop_constants(exog)
 matrix B.coeff = mols(endog, exog)
 rnameset(B.coeff, cnameget(X))
 matrix B.ahat = get_ahat(mybar, mxbar, B)
@@ -446,6 +446,8 @@ loop i=1..cols(mxbar)
   x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,])
 endloop
 matrix ahat = mybar_values .- (x * self.coeff)
+print ahat
+eval rows(ahat)
 return vec(ones(self.T, self.N) .* ahat')
 </code>
 </gretl-function>
@@ -455,13 +457,8 @@ return vec(ones(self.T, self.N) .* ahat')
  </params>
 <code>/* Drop columns which are constant over its entire length.
 return: matrix, Columns which are not constant over its entire length. */
-matrix x = {}
-loop i=1..cols(m)
-  if isconst(m[,i]) == FALSE
-    x ~= m[,i]
-  endif
-endloop
-return x
+matrix mask = (sdc(m) .!= 0)
+return selifc(m, mask)
 </code>
 </gretl-function>
 <sample-script>

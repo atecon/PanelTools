@@ -302,6 +302,9 @@ function matrix get_ahat (const matrix mybar "Unit-specific mean of 'y'",
 
     matrix ahat = mybar_values .- (x * self.coeff)
 
+    print ahat
+    eval rows(ahat)
+
     return vec(ones(self.T, self.N) .* ahat')
 end function
 
@@ -321,10 +324,10 @@ function bundle fe_estimator (const matrix y,
     strings B.parnames = cnameget(X)
 
     matrix mybar = mpmean(y, N)
-    matrix mx = drop_constants(X)
-    matrix mxbar = mpmean(mx, N)
+    matrix mxbar = mpmean(X, N)
     matrix endog = y .- mybar
-    matrix exog = mx .- mxbar
+    matrix exog = X .- mxbar
+    matrix exog = drop_constants(exog)
 
     matrix B.coeff = mols(endog, exog)
     rnameset(B.coeff, cnameget(X))
