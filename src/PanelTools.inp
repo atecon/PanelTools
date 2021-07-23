@@ -264,6 +264,16 @@ function matrix meanc_robust (const matrix X)
 end function
 
 
+function matrix sdc_robust (const matrix x)
+    /* Compute standard deviation in case of nan values in matrix. */
+
+    matrix m = ok(x)
+    matrix d = x .- meanc_robust(x)
+    return sqrt(sumc( (m ? d : 0 ).^2 ) ./ sumc(m))
+end function
+
+
+
 function matrix mpmean (matrix m, const int N)
     /* Compute vector of mean values of the column vector "m" for each
     cross-sectional unit. Matrix equivalent to gretl's built-in pmean() function.
@@ -293,17 +303,18 @@ function matrix get_ahat (const matrix mybar "Unit-specific mean of 'y'",
     /* Compute fixed-effects.
     return: matrix, Column vector with fixed-effects as stacked time-series. */
 
+
     mybar_values = vec(mshape(mybar, self.T, self.N)[1,]) # N by 1
+
+    # Extract vector of unit-specific mean values: N by k
     matrix x = mshape(NA, self.N, cols(mxbar))
 
+    # TODO: could construct a mask vector by grabbing every (N+1) entry of x[,i] -> avoid vec(mshape())
     loop i=1..cols(mxbar)
-        x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,])
+        x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,]) # only 1st row as constant
     endloop
 
     matrix ahat = mybar_values .- (x * self.coeff)
-
-    print ahat
-    eval rows(ahat)
 
     return vec(ones(self.T, self.N) .* ahat')
 end function
@@ -317,19 +328,27 @@ function bundle fe_estimator (const matrix y,
 
     set skip_missing off
 
-    bundle B = null
-    scalar B.T = rows(y) / N
-    scalar B.N = N
-    string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : ""
-    strings B.parnames = cnameget(X)
+    bundle B = model_bundle_basics(y, X, N)
+    string B.estimator = "fixed_effects"
 
     matrix mybar = mpmean(y, N)
     matrix mxbar = mpmean(X, N)
     matrix endog = y .- mybar
     matrix exog = X .- mxbar
-    matrix exog = drop_constants(exog)
+    matrix mask
+    matrix exog = drop_constants(exog, &mask)
+    mxbar = selifc(mxbar, mask)
 
-    matrix B.coeff = mols(endog, exog)
+    # As some columns may be dropped, we need to update B.parnames
+    B.parnames = mask_string_array(B.parnames, mask)
+
+    catch matrix B.coeff = mols(endog, exog)
+
+    B.error = $error
+    if B.error
+        return B
+    endif
+
     rnameset(B.coeff, cnameget(X))
 
     matrix B.ahat = get_ahat(mybar, mxbar, B)
@@ -340,12 +359,97 @@ function bundle fe_estimator (const matrix y,
 end function
 
 
-function matrix drop_constants (const matrix m)
+function strings mask_string_array (const strings S, matrix mask)
+    /* Select from S only masked entries.
+    return: string array */
+
+    mask = vec(mask)
+    strings ret = array()
+
+    loop i=1..rows(mask)
+        if mask[i] == TRUE
+            ret += S[i]
+        endif
+    endloop
+
+    return ret
+end function
+
+
+function bundle pols_estimator (const matrix y,
+                                const matrix X,
+                                const int N[1::] "Number of cross-sectional units")
+    /* Pooled OLS estimation using matrices.
+    return: bundle, Model output. */
+
+    bundle B = model_bundle_basics(y, X, N)
+    string B.estimator = "ols"
+
+    catch matrix B.coeff = mols(y, X)
+
+    B.error = $error
+    if B.error
+        return B
+    endif
+
+    rnameset(B.coeff, cnameget(X))
+
+    return B
+end function
+
+
+function bundle model_bundle_basics (const matrix y,
+                                     const matrix X,
+                                     const int N[1::] "Number of cross-sectional units")
+    /* Fill model bundle with basic information
+    return: bundle, basic initial information. */
+
+    bundle B
+
+    scalar B.N = N
+    scalar B.T = rows(y) / B.N # consider the case that y is sub-sampled
+    string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : ""
+    strings B.parnames = cnameget(X)
+    scalar B.error = FALSE
+
+    return B
+end function
+
+
+function matrix drop_constants (const matrix m, matrix *mask[null])
     /* Drop columns which are constant over its entire length.
     return: matrix, Columns which are not constant over its entire length. */
 
-    matrix mask = (sdc(m) .!= 0)
+    matrix mask = (sdc_robust(m) .!= 0)
     return selifc(m, mask)
 end function
 
 
+function matrix panel_predict (const matrix x "Values of test set",
+                               const bundle Model "Model object",
+                               const bool verbose[FALSE])
+    /* Compute static predictions for a given model.
+    return: matrix, Stacked horizon by N time-series of forecasts. */
+
+    errorif(rows(Model.coeff) != cols(x),\
+            "Number of variables does not match length of coefficient vector.")
+
+    scalar horizon = rows(x) / Model.N
+
+    if verbose
+        print "INFO: Compute predictions."
+        flush
+    endif
+
+    matrix fc = x * Model.coeff
+    if Model.estimator == "fixed_effects"  # add fixed-effects
+        fc = mshape(fc, horizon, Model.N)
+        fc = fc .+ mshape(Model.ahat, Model.T, Model.N)[1,]  # N by 1
+    endif
+
+    if verbose > 1
+        print "INFO: Finished model estimation."
+    endif
+
+    return vec(fc)
+end function

@@ -133,7 +133,21 @@ completely ignored.
 
 
 ## fe_estimator (const matrix y, const matrix X, const int N[1::])
-Matrix-based equivalent of gretl's built-in fixed-effect panel estimator.
+Matrix-based equivalent of gretl's built-in fixed-effect panel estimator
+(see 'help panel'). Currently no inference is done.
+
+Parameters
+    y        - matrix, Column vector of stacked time-series
+    X        - matrix, Matrix of regressors of stacked time-series
+    N        - integer, Number of cross-sectional units
+
+Returns
+Bundle object comprising both point estimates of coefficients (key: &quot;coeff&quot;) and
+estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
+
+
+## pols_estimator (const matrix y, const matrix X, const int N[1::])
+Matrix-based equivalent of gretl's built-in pooled ols function (see 'help panel').
 Currently no inference is done.
 
 Parameters
@@ -146,10 +160,25 @@ Bundle object comprising both point estimates of coefficients (key: &quot;coeff&
 estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
 
 
+## panel_predict (const matrix x, const bundle Model, const bool verbose[FALSE])
+Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
+added. This is the same treatment as gretl does for the panel fixed-effects model when
+applying the 'fcast' command.
+
+Parameters
+    X        - matrix, Matrix of regressors of stacked time-series for test set.
+    Model    - bundle, Model object holding information on estimation results
+    verbose  - bool, print details (optional, default = FALSE)
+
+Returns
+Matrix of stacked forecasts. &quot;N&quot; stacked time-series of length &quot;horizon&quot;. The parameter
+&quot;horizon&quot; is internally determined by the input dimension of &quot;X&quot; and the number of
+cross-sectional units &quot;N&quot; as specified in the &quot;Model&quot; bundle.
+
 
 # Changelog
 v0.3 (07-2021)
-- add new mpmean() and fe_estimator() functions
+- add new mpmean(), fe_estimator(), pols_estimator() and panel_predict() functions
 
 v0.2 (07-2021)
 - add new ppolyfit() function
@@ -367,21 +396,76 @@ return x
 <code>/* Fixed-effects estimation using matrices.
 return: bundle, Model output. */
 set skip_missing off
-bundle B = null
-scalar B.T = rows(y) / N
-scalar B.N = N
-string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : &quot;&quot;
-strings B.parnames = cnameget(X)
+bundle B = model_bundle_basics(y, X, N)
+string B.estimator = &quot;fixed_effects&quot;
 matrix mybar = mpmean(y, N)
 matrix mxbar = mpmean(X, N)
 matrix endog = y .- mybar
 matrix exog = X .- mxbar
-matrix exog = drop_constants(exog)
-matrix B.coeff = mols(endog, exog)
+matrix mask
+matrix exog = drop_constants(exog, &amp;mask)
+mxbar = selifc(mxbar, mask)
+# As some columns may be dropped, we need to update B.parnames
+B.parnames = mask_string_array(B.parnames, mask)
+catch matrix B.coeff = mols(endog, exog)
+B.error = $error
+if B.error
+  return B
+endif
 rnameset(B.coeff, cnameget(X))
 matrix B.ahat = get_ahat(mybar, mxbar, B)
 set skip_missing on
 return B
+</code>
+</gretl-function>
+<gretl-function name="pols_estimator" type="bundle">
+ <params count="3">
+  <param name="y" type="matrix" const="true"/>
+  <param name="X" type="matrix" const="true"/>
+  <param name="N" type="int" min="1" const="true">
+<description>Number of cross-sectional units</description>
+  </param>
+ </params>
+<code>/* Pooled OLS estimation using matrices.
+return: bundle, Model output. */
+bundle B = model_bundle_basics(y, X, N)
+string B.estimator = &quot;ols&quot;
+catch matrix B.coeff = mols(y, X)
+B.error = $error
+if B.error
+  return B
+endif
+rnameset(B.coeff, cnameget(X))
+return B
+</code>
+</gretl-function>
+<gretl-function name="panel_predict" type="matrix">
+ <params count="3">
+  <param name="x" type="matrix" const="true">
+<description>Values of test set</description>
+  </param>
+  <param name="Model" type="bundle" const="true">
+<description>Model object</description>
+  </param>
+  <param name="verbose" type="bool" default="0" const="true"/>
+ </params>
+<code>/* Compute static predictions for a given model.
+return: matrix, Stacked horizon by N time-series of forecasts. */
+errorif(rows(Model.coeff) != cols(x), &quot;Number of variables does not match length of coefficient vector.&quot;)
+scalar horizon = rows(x) / Model.N
+if verbose
+  print &quot;INFO: Compute predictions.&quot;
+  flush
+endif
+matrix fc = x * Model.coeff
+if Model.estimator == &quot;fixed_effects&quot;  # add fixed-effects
+  fc = mshape(fc, horizon, Model.N)
+  fc = fc .+ mshape(Model.ahat, Model.T, Model.N)[1,]  # N by 1
+endif
+if verbose &gt; 1
+  print &quot;INFO: Finished model estimation.&quot;
+endif
+return vec(fc)
 </code>
 </gretl-function>
 <gretl-function name="helper_pfirst_plast" type="series" private="1">
@@ -428,6 +512,16 @@ matrix B = ok(X)
 return sumc(B ? X : 0) ./ sumc(B)
 </code>
 </gretl-function>
+<gretl-function name="sdc_robust" type="matrix" private="1">
+ <params count="1">
+  <param name="x" type="matrix" const="true"/>
+ </params>
+<code>/* Compute standard deviation in case of nan values in matrix. */
+matrix m = ok(x)
+matrix d = x .- meanc_robust(x)
+return sqrt(sumc( (m ? d : 0 ).^2 ) ./ sumc(m))
+</code>
+</gretl-function>
 <gretl-function name="get_ahat" type="matrix" private="1">
  <params count="3">
   <param name="mybar" type="matrix" const="true">
@@ -441,23 +535,60 @@ return sumc(B ? X : 0) ./ sumc(B)
 <code>/* Compute fixed-effects.
 return: matrix, Column vector with fixed-effects as stacked time-series. */
 mybar_values = vec(mshape(mybar, self.T, self.N)[1,]) # N by 1
+# Extract vector of unit-specific mean values: N by k
 matrix x = mshape(NA, self.N, cols(mxbar))
+# TODO: could construct a mask vector by grabbing every (N+1) entry of x[,i] -&gt; avoid vec(mshape())
 loop i=1..cols(mxbar)
-  x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,])
+  x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,]) # only 1st row as constant
 endloop
 matrix ahat = mybar_values .- (x * self.coeff)
-print ahat
-eval rows(ahat)
 return vec(ones(self.T, self.N) .* ahat')
 </code>
 </gretl-function>
+<gretl-function name="mask_string_array" type="strings" private="1">
+ <params count="2">
+  <param name="S" type="strings" const="true"/>
+  <param name="mask" type="matrix"/>
+ </params>
+<code>/* Select from S only masked entries.
+return: string array */
+mask = vec(mask)
+strings ret = array()
+loop i=1..rows(mask)
+  if mask[i] == TRUE
+    ret += S[i]
+  endif
+endloop
+return ret
+</code>
+</gretl-function>
+<gretl-function name="model_bundle_basics" type="bundle" private="1">
+ <params count="3">
+  <param name="y" type="matrix" const="true"/>
+  <param name="X" type="matrix" const="true"/>
+  <param name="N" type="int" min="1" const="true">
+<description>Number of cross-sectional units</description>
+  </param>
+ </params>
+<code>/* Fill model bundle with basic information
+return: bundle, basic initial information. */
+bundle B
+scalar B.N = N
+scalar B.T = rows(y) / B.N # consider the case that y is sub-sampled
+string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : &quot;&quot;
+strings B.parnames = cnameget(X)
+scalar B.error = FALSE
+return B
+</code>
+</gretl-function>
 <gretl-function name="drop_constants" type="matrix" private="1">
- <params count="1">
+ <params count="2">
   <param name="m" type="matrix" const="true"/>
+  <param name="mask" type="matrixref" optional="true"/>
  </params>
 <code>/* Drop columns which are constant over its entire length.
 return: matrix, Columns which are not constant over its entire length. */
-matrix mask = (sdc(m) .!= 0)
+matrix mask = (sdc_robust(m) .!= 0)
 return selifc(m, mask)
 </code>
 </gretl-function>
