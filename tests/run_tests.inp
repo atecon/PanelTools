@@ -423,8 +423,8 @@ smpl unit <= 2 --restrict --permanent
 panel invest const kstock value --pooled #--quiet
 bundle Model = $model
 
-function void test_ols_estimator (const list L, const bundle Model)
-    print "Start testing function ols_estimator()"
+function void test_pols_estimator (const list L, const bundle Model)
+    print "Start testing function pols_estimator()"
 
     # Given
     matrix y = {L.invest}
@@ -433,7 +433,7 @@ function void test_ols_estimator (const list L, const bundle Model)
     strings expected_parnames = varnames(Z)
 
     # When
-    bundle actual = ols_estimator(y, X, $nobs/$pd)
+    bundle actual = pols_estimator(y, X, $nobs/$pd)
 
     # Then
     loop i=1..rows(Model.coeff)
@@ -444,7 +444,7 @@ function void test_ols_estimator (const list L, const bundle Model)
         assert(actual.parnames[i] == "$i")
     endloop
 end function
-test_ols_estimator(dataset, Model)
+test_pols_estimator(dataset, Model)
 
 
 
