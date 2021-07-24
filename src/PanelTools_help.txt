@@ -137,7 +137,7 @@ Bundle object comprising both point estimates of coefficients (key: "coeff") and
 estimated fixed-effects stored as stacked time-series (key: "ahat").
 
 
-## pols_estimator (const matrix y, const matrix X, const int N[1::])
+## ols_estimator (const matrix y, const matrix X, const int N[1::])
 Matrix-based equivalent of gretl's built-in pooled ols function (see 'help panel').
 Currently no inference is done.
 

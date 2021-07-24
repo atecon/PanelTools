@@ -146,7 +146,7 @@ Bundle object comprising both point estimates of coefficients (key: &quot;coeff&
 estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
 
 
-## pols_estimator (const matrix y, const matrix X, const int N[1::])
+## ols_estimator (const matrix y, const matrix X, const int N[1::])
 Matrix-based equivalent of gretl's built-in pooled ols function (see 'help panel').
 Currently no inference is done.
 
@@ -418,7 +418,7 @@ set skip_missing on
 return B
 </code>
 </gretl-function>
-<gretl-function name="pols_estimator" type="bundle">
+<gretl-function name="ols_estimator" type="bundle">
  <params count="3">
   <param name="y" type="matrix" const="true"/>
   <param name="X" type="matrix" const="true"/>

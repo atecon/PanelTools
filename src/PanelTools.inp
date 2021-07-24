@@ -376,7 +376,7 @@ function strings mask_string_array (const strings S, matrix mask)
 end function
 
 
-function bundle pols_estimator (const matrix y,
+function bundle ols_estimator (const matrix y,
                                 const matrix X,
                                 const int N[1::] "Number of cross-sectional units")
     /* Pooled OLS estimation using matrices.
