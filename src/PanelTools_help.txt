@@ -124,7 +124,21 @@ completely ignored.
 
 
 ## fe_estimator (const matrix y, const matrix X, const int N[1::])
-Matrix-based equivalent of gretl's built-in fixed-effect panel estimator.
+Matrix-based equivalent of gretl's built-in fixed-effect panel estimator
+(see 'help panel'). Currently no inference is done.
+
+Parameters
+    y        - matrix, Column vector of stacked time-series
+    X        - matrix, Matrix of regressors of stacked time-series
+    N        - integer, Number of cross-sectional units
+
+Returns
+Bundle object comprising both point estimates of coefficients (key: "coeff") and
+estimated fixed-effects stored as stacked time-series (key: "ahat").
+
+
+## pols_estimator (const matrix y, const matrix X, const int N[1::])
+Matrix-based equivalent of gretl's built-in pooled ols function (see 'help panel').
 Currently no inference is done.
 
 Parameters
@@ -137,10 +151,25 @@ Bundle object comprising both point estimates of coefficients (key: "coeff") and
 estimated fixed-effects stored as stacked time-series (key: "ahat").
 
 
+## panel_predict (const matrix x, const bundle Model, const bool verbose[FALSE])
+Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
+added. This is the same treatment as gretl does for the panel fixed-effects model when
+applying the 'fcast' command.
+
+Parameters
+    X        - matrix, Matrix of regressors of stacked time-series for test set.
+    Model    - bundle, Model object holding information on estimation results
+    verbose  - bool, print details (optional, default = FALSE)
+
+Returns
+Matrix of stacked forecasts. "N" stacked time-series of length "horizon". The parameter
+"horizon" is internally determined by the input dimension of "X" and the number of
+cross-sectional units "N" as specified in the "Model" bundle.
+
 
 # Changelog
 v0.3 (07-2021)
-- add new mpmean() and fe_estimator() functions
+- add new mpmean(), fe_estimator(), pols_estimator() and panel_predict() functions
 
 v0.2 (07-2021)
 - add new ppolyfit() function

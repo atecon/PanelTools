@@ -355,11 +355,11 @@ test_drop_constants(Params)
 
 
 bundles Params = null
-Params = Params + _(N = 2, T = 2, coeff = {0; 1},\
-                    ybar = {1; 1; 2; 2},\
-                    xbar = {0, 2; 0, 2; 2, 4; 2, 4},\
-                    expected = {-1; -1; -2; -2} )
-Params
+Params = Params + _(N = 2, T = 3, coeff = {0; 1},\
+                    ybar = {1; 1; 1; 2; 2; 2},\
+                    xbar = {0, 2; 0, 2; 0, 2; 2, 4; 2, 4; 2, 4; 2, 4},\
+                    expected = {-1; -1; -1; -2; -2; -2} )
+
 function void test_get_ahat (const bundles P)
     print "Start testing function get_ahat()."
 
@@ -395,7 +395,8 @@ function void test_fe_estimator (const list L, const bundle Model)
     matrix y = {L.invest}
     list Z = const L.kstock L.value
     matrix X = {Z}
-    strings expected_parnames = varnames(Z)
+    Z_wo_const = Z - const
+    strings expected_parnames = varnames(Z_wo_const)
 
     # When
     bundle actual = fe_estimator(y, X, $nobs/$pd)
@@ -414,6 +415,36 @@ function void test_fe_estimator (const list L, const bundle Model)
 end function
 test_fe_estimator(dataset, Model)
 
+
+
+open grunfeld.gdt -p -q
+genr unit
+smpl unit <= 2 --restrict --permanent
+panel invest const kstock value --pooled #--quiet
+bundle Model = $model
+
+function void test_pols_estimator (const list L, const bundle Model)
+    print "Start testing function pols_estimator()"
+
+    # Given
+    matrix y = {L.invest}
+    list Z = const L.kstock L.value
+    matrix X = {Z}
+    strings expected_parnames = varnames(Z)
+
+    # When
+    bundle actual = pols_estimator(y, X, $nobs/$pd)
+
+    # Then
+    loop i=1..rows(Model.coeff)
+        assert_almost_equal_num(Model.coeff[i], actual.coeff[i], 10e-5)
+    endloop
+
+    loop foreach i expected_parnames
+        assert(actual.parnames[i] == "$i")
+    endloop
+end function
+test_pols_estimator(dataset, Model)
 
 
 
