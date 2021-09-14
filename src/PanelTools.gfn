@@ -367,6 +367,7 @@ return x
 <code>/* Fixed-effects estimation using matrices.
 return: bundle, Model output. */
 set skip_missing off
+matrix mask
 bundle B = null
 scalar B.T = rows(y) / N
 scalar B.N = N
@@ -376,10 +377,18 @@ matrix mybar = mpmean(y, N)
 matrix mxbar = mpmean(X, N)
 matrix endog = y .- mybar
 matrix exog = X .- mxbar
-matrix exog = drop_constants(exog)
+matrix exog = drop_constants(exog, &amp;mask)
 matrix B.coeff = mols(endog, exog)
-rnameset(B.coeff, cnameget(X))
-matrix B.ahat = get_ahat(mybar, mxbar, B)
+strings rnames
+mask = vec(mask)
+loop i=1..vec(rows(mask))
+  if mask[i] == TRUE
+    rnames += B.parnames[i]
+    rnames
+  endif
+endloop
+rnameset(B.coeff, rnames)
+matrix B.ahat = get_ahat(mybar, selifc(mxbar, mask'), B)
 set skip_missing on
 return B
 </code>
@@ -446,14 +455,13 @@ loop i=1..cols(mxbar)
   x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,])
 endloop
 matrix ahat = mybar_values .- (x * self.coeff)
-print ahat
-eval rows(ahat)
 return vec(ones(self.T, self.N) .* ahat')
 </code>
 </gretl-function>
 <gretl-function name="drop_constants" type="matrix" private="1">
- <params count="1">
+ <params count="2">
   <param name="m" type="matrix" const="true"/>
+  <param name="mask" type="matrixref"/>
  </params>
 <code>/* Drop columns which are constant over its entire length.
 return: matrix, Columns which are not constant over its entire length. */

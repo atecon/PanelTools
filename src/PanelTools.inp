@@ -294,16 +294,13 @@ function matrix get_ahat (const matrix mybar "Unit-specific mean of 'y'",
     return: matrix, Column vector with fixed-effects as stacked time-series. */
 
     mybar_values = vec(mshape(mybar, self.T, self.N)[1,]) # N by 1
-    matrix x = mshape(NA, self.N, cols(mxbar))
 
+    matrix x = mshape(NA, self.N, cols(mxbar))
     loop i=1..cols(mxbar)
         x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,])
     endloop
 
     matrix ahat = mybar_values .- (x * self.coeff)
-
-    print ahat
-    eval rows(ahat)
 
     return vec(ones(self.T, self.N) .* ahat')
 end function
@@ -317,7 +314,9 @@ function bundle fe_estimator (const matrix y,
 
     set skip_missing off
 
+    matrix mask
     bundle B = null
+
     scalar B.T = rows(y) / N
     scalar B.N = N
     string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : ""
@@ -327,12 +326,21 @@ function bundle fe_estimator (const matrix y,
     matrix mxbar = mpmean(X, N)
     matrix endog = y .- mybar
     matrix exog = X .- mxbar
-    matrix exog = drop_constants(exog)
+    matrix exog = drop_constants(exog, &mask)
 
     matrix B.coeff = mols(endog, exog)
-    rnameset(B.coeff, cnameget(X))
 
-    matrix B.ahat = get_ahat(mybar, mxbar, B)
+    strings rnames
+    mask = vec(mask)
+    loop i=1..vec(rows(mask))
+        if mask[i] == TRUE
+            rnames += B.parnames[i]
+            rnames
+        endif
+    endloop
+    rnameset(B.coeff, rnames)
+
+    matrix B.ahat = get_ahat(mybar, selifc(mxbar, mask'), B)
 
     set skip_missing on
 
@@ -340,7 +348,7 @@ function bundle fe_estimator (const matrix y,
 end function
 
 
-function matrix drop_constants (const matrix m)
+function matrix drop_constants (const matrix m, matrix *mask)
     /* Drop columns which are constant over its entire length.
     return: matrix, Columns which are not constant over its entire length. */
 
