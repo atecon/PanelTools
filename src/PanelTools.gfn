@@ -418,6 +418,8 @@ endif
 rnameset(B.coeff, B.parnames)
 matrix B.xmat = parnames_to_matrix(X, B.parnames)
 matrix B.ahat = get_ahat(mybar, mxbar, B)
+matrix B.yhat = B.ahat + B.xmat * B.coeff
+matrix B.rsq_overall = corr(y, B.yhat)^2
 set skip_missing on
 return B
 </code>

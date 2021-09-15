@@ -195,7 +195,7 @@ function void panelinfo (void)
 end function
 
 
-function series ppolyfit(const series y, const int order[1::])
+function series ppolyfit (const series y, const int order[1::])
     /* Fits a polynomial trend of order "order" to the input series "y" using the method of orthogonal polynomials for each cross-sectional unit separately.
     This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
 
@@ -352,10 +352,21 @@ function bundle fe_estimator (const matrix y,
 
     matrix B.xmat = parnames_to_matrix(X, B.parnames)
     matrix B.ahat = get_ahat(mybar, mxbar, B)
+    matrix B.yhat = B.ahat + B.xmat * B.coeff
+
+    matrix B.rsq = rsq_overall(y, B.yhat)
 
     set skip_missing on
 
     return B
+end function
+
+
+function scalar rsq_overall (const matrix y, const matrix yhat)
+    /* Compute the overall R^2 statistics as defined in Verbeek's textbook.
+    return: scalar, overall R^2 statistics */
+
+    return corr(y, B.yhat)^2
 end function
 
 
