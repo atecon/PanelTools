@@ -350,11 +350,29 @@ function bundle fe_estimator (const matrix y,
     endif
     rnameset(B.coeff, B.parnames)
 
+    matrix B.xmat = parnames(X, B.parnames)
     matrix B.ahat = get_ahat(mybar, mxbar, B)
 
     set skip_missing on
 
     return B
+end function
+
+
+function matrix parnames_to_matrix (const matrix x, const strings S)
+    /* Compile a matrix of series based on an array of series names.
+    return: matrix, Including columns as named in 'S'. */
+
+    matrix R
+
+    loop foreach i S
+        matrix m = instrings(S, "$i")
+        if nelem(m)
+            R ~= x[, m[1]]
+        endif
+    endloop
+
+    return R
 end function
 
 

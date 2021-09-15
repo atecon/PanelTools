@@ -416,6 +416,7 @@ if B.error
   return B
 endif
 rnameset(B.coeff, B.parnames)
+matrix B.xmat = parnames(X, B.parnames)
 matrix B.ahat = get_ahat(mybar, mxbar, B)
 set skip_missing on
 return B
@@ -545,6 +546,23 @@ loop i=1..cols(mxbar)
 endloop
 matrix ahat = mybar_values .- (x * self.coeff)
 return vec(ones(self.T, self.N) .* ahat')
+</code>
+</gretl-function>
+<gretl-function name="parnames_to_matrix" type="matrix" private="1">
+ <params count="2">
+  <param name="x" type="matrix" const="true"/>
+  <param name="S" type="strings" const="true"/>
+ </params>
+<code>/* Compile a matrix of series based on an array of series names.
+return: matrix, Including columns as named in 'S'. */
+matrix R
+loop foreach i S
+  matrix m = instrings(S, &quot;$i&quot;)
+  if nelem(m)
+    R ~= x[, m[1]]
+  endif
+endloop
+return R
 </code>
 </gretl-function>
 <gretl-function name="print_number_of_droppped_cols" type="void" private="1">
