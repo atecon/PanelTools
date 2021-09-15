@@ -406,7 +406,7 @@ matrix exog = X .- mxbar
 Info(&quot;Drop eventual constant series from list of selected features.&quot;)
 scalar nc = cols(exog)
 matrix exog = drop_constants(exog, &amp;mask)
-print_number_of_droppped_consts(nc, cols(exog))
+print_number_of_droppped_cols(nc, cols(exog))
 mxbar = selifc(mxbar, mask)
 # As some columns may be dropped, we need to update B.parnames
 B.parnames = mask_string_array(B.parnames, mask)
@@ -547,14 +547,14 @@ matrix ahat = mybar_values .- (x * self.coeff)
 return vec(ones(self.T, self.N) .* ahat')
 </code>
 </gretl-function>
-<gretl-function name="print_number_of_droppped_consts" type="void" private="1">
+<gretl-function name="print_number_of_droppped_cols" type="void" private="1">
  <params count="2">
   <param name="before" type="int" min="0" const="true"/>
   <param name="after" type="int" min="0" const="true"/>
  </params>
 <code>ndropped = before - after
 if ndropped &gt; 0
-  Info(sprintf(&quot;Dropped %d constant series from list of selected features.&quot;, ndropped))
+  Info(sprintf(&quot;Dropped %d columns from feature list.&quot;, ndropped))
 endif
 </code>
 </gretl-function>

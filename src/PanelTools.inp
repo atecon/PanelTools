@@ -336,7 +336,7 @@ function bundle fe_estimator (const matrix y,
     Info("Drop eventual constant series from list of selected features.")
     scalar nc = cols(exog)
     matrix exog = drop_constants(exog, &mask)
-    print_number_of_droppped_consts(nc, cols(exog))
+    print_number_of_droppped_cols(nc, cols(exog))
 
     mxbar = selifc(mxbar, mask)
 
@@ -358,10 +358,10 @@ function bundle fe_estimator (const matrix y,
 end function
 
 
-function void print_number_of_droppped_consts (const int before[0::], const int after[0::])
+function void print_number_of_droppped_cols (const int before[0::], const int after[0::])
     ndropped = before - after
     if ndropped > 0
-        Info(sprintf("Dropped %d constant series from list of selected features.", ndropped))
+        Info(sprintf("Dropped %d columns from feature list.", ndropped))
     endif
 end function
 
