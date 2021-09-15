@@ -353,7 +353,6 @@ function bundle fe_estimator (const matrix y,
     matrix B.xmat = parnames_to_matrix(X, B.parnames)
     matrix B.ahat = get_ahat(mybar, mxbar, B)
     matrix B.yhat = B.ahat + B.xmat * B.coeff
-
     matrix B.rsq = rsq_overall(y, B.yhat)
 
     set skip_missing on

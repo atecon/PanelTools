@@ -419,7 +419,7 @@ rnameset(B.coeff, B.parnames)
 matrix B.xmat = parnames_to_matrix(X, B.parnames)
 matrix B.ahat = get_ahat(mybar, mxbar, B)
 matrix B.yhat = B.ahat + B.xmat * B.coeff
-matrix B.rsq_overall = corr(y, B.yhat)^2
+matrix B.rsq = rsq_overall(y, B.yhat)
 set skip_missing on
 return B
 </code>
@@ -548,6 +548,16 @@ loop i=1..cols(mxbar)
 endloop
 matrix ahat = mybar_values .- (x * self.coeff)
 return vec(ones(self.T, self.N) .* ahat')
+</code>
+</gretl-function>
+<gretl-function name="rsq_overall" type="scalar" private="1">
+ <params count="2">
+  <param name="y" type="matrix" const="true"/>
+  <param name="yhat" type="matrix" const="true"/>
+ </params>
+<code>/* Compute the overall R^2 statistics as defined in Verbeek's textbook.
+return: scalar, overall R^2 statistics */
+return corr(y, B.yhat)^2
 </code>
 </gretl-function>
 <gretl-function name="parnames_to_matrix" type="matrix" private="1">
