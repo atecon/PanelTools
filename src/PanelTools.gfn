@@ -403,7 +403,7 @@ matrix mybar = mpmean(y, N)
 matrix mxbar = mpmean(X, N)
 matrix endog = y .- mybar
 matrix exog = X .- mxbar
-Info(&quot;Drop eventual constant series from list of selected features.&quot;)
+print &quot;INFO: Drop eventual constant series from list of selected features.&quot;
 scalar nc = cols(exog)
 matrix exog = drop_constants(exog, &amp;mask)
 print_number_of_droppped_cols(nc, cols(exog))
@@ -585,7 +585,7 @@ return R
  </params>
 <code>ndropped = before - after
 if ndropped &gt; 0
-  Info(sprintf(&quot;Dropped %d columns from feature list.&quot;, ndropped))
+  printf &quot;INFO: Dropped %d columns from feature list.\n&quot;, ndropped
 endif
 </code>
 </gretl-function>

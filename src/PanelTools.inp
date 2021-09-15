@@ -333,7 +333,7 @@ function bundle fe_estimator (const matrix y,
     matrix mxbar = mpmean(X, N)
     matrix endog = y .- mybar
     matrix exog = X .- mxbar
-    Info("Drop eventual constant series from list of selected features.")
+    print "INFO: Drop eventual constant series from list of selected features."
     scalar nc = cols(exog)
     matrix exog = drop_constants(exog, &mask)
     print_number_of_droppped_cols(nc, cols(exog))
@@ -390,7 +390,7 @@ end function
 function void print_number_of_droppped_cols (const int before[0::], const int after[0::])
     ndropped = before - after
     if ndropped > 0
-        Info(sprintf("Dropped %d columns from feature list.", ndropped))
+        printf "INFO: Dropped %d columns from feature list.\n", ndropped
     endif
 end function
 
