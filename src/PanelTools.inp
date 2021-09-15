@@ -333,7 +333,11 @@ function bundle fe_estimator (const matrix y,
     matrix mxbar = mpmean(X, N)
     matrix endog = y .- mybar
     matrix exog = X .- mxbar
+    Info("Drop eventual constant series from list of selected features.")
+    scalar nc = cols(exog)
     matrix exog = drop_constants(exog, &mask)
+    print_number_of_droppped_consts(nc, cols(exog))
+
     mxbar = selifc(mxbar, mask)
 
     # As some columns may be dropped, we need to update B.parnames
@@ -351,6 +355,14 @@ function bundle fe_estimator (const matrix y,
     set skip_missing on
 
     return B
+end function
+
+
+function void print_number_of_droppped_consts (const int before[0::], const int after[0::])
+    ndropped = before - after
+    if ndropped > 0
+        Info(sprintf("Dropped %d constant series from list of selected features.", ndropped))
+    endif
 end function
 
 
