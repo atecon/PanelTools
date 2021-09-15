@@ -353,6 +353,7 @@ function bundle fe_estimator (const matrix y,
     matrix B.xmat = parnames_to_matrix(X, B.parnames)
     matrix B.ahat = get_ahat(mybar, mxbar, B)
     matrix B.yhat = B.ahat + B.xmat * B.coeff
+    matrix B.uhat = y - B.yhat
     matrix B.rsq = rsq_overall(y, B.yhat)
 
     set skip_missing on
@@ -365,7 +366,7 @@ function scalar rsq_overall (const matrix y, const matrix yhat)
     /* Compute the overall R^2 statistics as defined in Verbeek's textbook.
     return: scalar, overall R^2 statistics */
 
-    return corr(y, B.yhat)^2
+    return mcorr(y ~ yhat)[1,2]^2
 end function
 
 
