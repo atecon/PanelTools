@@ -366,7 +366,9 @@ function scalar rsq_overall (const matrix y, const matrix yhat)
     /* Compute the overall R^2 statistics as defined in Verbeek's textbook.
     return: scalar, overall R^2 statistics */
 
-    return mcorr(y ~ yhat)[1,2]^2
+    scalar x = mcorr(y ~ yhat)[1,2]^2
+
+    return ok(x) ? x : 0
 end function
 
 
@@ -375,13 +377,18 @@ function matrix parnames_to_matrix (const matrix x, const strings S)
     return: matrix, Including columns as named in 'S'. */
 
     matrix R
+    strings xnames = cnameget(x)
+    strings Rnames
 
     loop foreach i S
-        matrix m = instrings(S, "$i")
+        matrix m = instrings(xnames, "$i")
         if nelem(m)
             R ~= x[, m[1]]
+            Rnames += "$i"
         endif
     endloop
+
+    cnameset(R, Rnames)
 
     return R
 end function
@@ -399,8 +406,21 @@ function strings mask_string_array (const strings S, matrix mask)
     /* Select from S only masked entries.
     return: string array */
 
-    mask = vec(mask)
     strings ret = array()
+    mask = vec(mask)
+
+    if sum(mask) == 0
+        print "WARNING: Matrix 'mask' has only zeros. Ignore."
+        return ret
+    endif
+    if nelem(mask) == 0 || nelem(S) == 0
+        print "WARNING: Either matrix 'mask' or string array S has no valid entries. Ignore."
+        return ret
+    endif
+    if nelem(mask) != nelem(S)
+        print "ERROR: String array must have the same dimension as vector. Return empty array"
+        return ret
+    endif
 
     loop i=1..rows(mask)
         if mask[i] == TRUE

@@ -447,6 +447,107 @@ end function
 test_pols_estimator(dataset, Model)
 
 
+bundles Params = null
+Params = Params + _(y = {1, 2, 3, 4}', x = {1, 2, 3, 4}',\
+                    expected = 1)
+Params = Params + _(y = {1, 2, 3, 4}', x = {-1, -2, -3, -4}',\
+                    expected = 1)
+Params = Params + _(y = {1, 2, 3, 4}', x = {0, 0, 0, 0}',\
+                    expected = 0)
+function void test_rsq_overall (const bundles P)
+    print "Start testing rsq_overall()"
+
+    loop foreach i P
+        # Given + When
+        scalar actual = rsq_overall(P[i].y, P[i].x)
+
+        # Then
+        assert(actual == P[i].expected)
+    endloop
+end function
+test_rsq_overall(Params)
+
+
+function void test_number_of_droppped_cols ()
+    print "Start testing print_number_of_droppped_cols()"
+
+    # Given
+    scalar x = 4
+    scalar y = 2
+    string actual = ""
+    string expected = sprintf("INFO: Dropped %d columns from feature list.\n", (x - y))
+
+    # When
+    outfile --buffer=actual
+        print_number_of_droppped_cols(x, y)
+    end outfile
+
+    # Then
+    assert(actual == expected)
+end function
+test_number_of_droppped_cols()
+
+
+bundles Params = null
+Params = Params + _(S = defarray("A", "B", "C"), mask = {1, 1, 1},\
+                    expected = defarray("A", "B", "C"))
+Params = Params + _(S = defarray("A", "B", "C"), mask = {0, 0, 0},\
+                    expected = array(0))
+Params = Params + _(S = defarray("D"), mask = {1, 1, 1},\
+                    expected = array(0))
+function void test_mask_string_array (const bundles P)
+    print "Start testing mask_string_array()"
+
+    loop foreach i P
+        # Given + When
+        strings actual = mask_string_array(P[i].S, P[i].mask)
+
+        # Then
+        if nelem(P[i].expected)
+            loop foreach j P[i].expected
+                assert(actual[j] == P[i].expected[j])
+            endloop
+        endif
+    endloop
+end function
+test_mask_string_array(Params)
+
+
+bundles Params = null
+Params = Params + _(m = mnormal(3,2),\
+                    cnames = defarray("A", "B"),\
+                    S = defarray("A", "B", "C"),\
+                    expected = defarray("A", "B")\
+                    )
+Params = Params + _(m = mnormal(3,2),\
+                    cnames = defarray("A", "B"),\
+                    S = defarray("C"),\
+                    expected = array(0)\
+                    )
+
+function void test_parnames_to_matrix (const bundles P)
+    print "Start testing parnames_to_matrix()"
+
+    loop foreach i P
+        # Given
+        matrix m = P[i].m
+        cnameset(m, P[i].cnames)
+
+        # When
+        matrix mout = parnames_to_matrix(m, P[i].S)
+        strings actual = cnameget(mout)
+
+        # Then
+        if nelem(P[i].expected)
+            loop foreach j P[i].expected
+                assert(actual[j] == P[i].expected[j])
+            endloop
+        endif
+    endloop
+end function
+test_parnames_to_matrix(Params)
+
+
 
 print "Finished all tests succesfully."
 quit
