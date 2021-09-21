@@ -167,7 +167,30 @@ Matrix of stacked forecasts. "N" stacked time-series of length "horizon". The pa
 cross-sectional units "N" as specified in the "Model" bundle.
 
 
+## mean_robust (const matrix X)
+Works as gretl's built-in function meanc(). Compute mean values for each column even in case of missing values.
+
+Parameters
+    X        - matrix, Matrix with data and possibly missing values
+
+Returns
+Row vector with mean values for each column.
+
+## sdc_robust (const matrix X)
+Works as gretl's built-in function sdc(). Compute standard deviation for each column even in case of missing values.
+
+Parameters
+    X        - matrix, Matrix with data and possibly missing values
+
+Returns
+Row vector with standard deviation values for each column.
+
+
 # Changelog
+v0.4 (XX-2021)
+- add new meanc_robust() and sdc_robust() functions
+-
+
 v0.3 (07-2021)
 - add new mpmean(), fe_estimator(), pols_estimator() and panel_predict() functions
 

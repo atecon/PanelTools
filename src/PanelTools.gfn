@@ -3,7 +3,7 @@
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>0.3</version>
-<date>2021-07-23</date>
+<date>2021-09-20</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -176,7 +176,30 @@ Matrix of stacked forecasts. &quot;N&quot; stacked time-series of length &quot;h
 cross-sectional units &quot;N&quot; as specified in the &quot;Model&quot; bundle.
 
 
+## mean_robust (const matrix X)
+Works as gretl's built-in function meanc(). Compute mean values for each column even in case of missing values.
+
+Parameters
+    X        - matrix, Matrix with data and possibly missing values
+
+Returns
+Row vector with mean values for each column.
+
+## sdc_robust (const matrix X)
+Works as gretl's built-in function sdc(). Compute standard deviation for each column even in case of missing values.
+
+Parameters
+    X        - matrix, Matrix with data and possibly missing values
+
+Returns
+Row vector with standard deviation values for each column.
+
+
 # Changelog
+v0.4 (XX-2021)
+- add new meanc_robust() and sdc_robust() functions
+-
+
 v0.3 (07-2021)
 - add new mpmean(), fe_estimator(), pols_estimator() and panel_predict() functions
 
@@ -475,6 +498,25 @@ endif
 return vec(fc)
 </code>
 </gretl-function>
+<gretl-function name="meanc_robust" type="matrix">
+ <params count="1">
+  <param name="X" type="matrix" const="true"/>
+ </params>
+<code>/* Compute mean values for each column even in case of missing values. */
+matrix B = ok(X)
+return sumc(B ? X : 0) ./ sumc(B)
+</code>
+</gretl-function>
+<gretl-function name="sdc_robust" type="matrix">
+ <params count="1">
+  <param name="x" type="matrix" const="true"/>
+ </params>
+<code>/* Compute standard deviation in case of nan values in matrix. */
+matrix m = ok(x)
+matrix d = x .- meanc_robust(x)
+return sqrt(sumc( (m ? d : 0 ).^2 ) ./ sumc(m))
+</code>
+</gretl-function>
 <gretl-function name="helper_pfirst_plast" type="series" private="1">
  <params count="2">
   <param name="y" type="series" const="true"/>
@@ -510,25 +552,6 @@ bundle B = _( ppolyfit = sprintf(&quot;polynomial fit of %s (order=%d)&quot;, yn
 return B[&quot;@fname&quot;]
 </code>
 </gretl-function>
-<gretl-function name="meanc_robust" type="matrix" private="1">
- <params count="1">
-  <param name="X" type="matrix" const="true"/>
- </params>
-<code>/* Compute mean values for each column even in case of missing values. */
-matrix B = ok(X)
-return sumc(B ? X : 0) ./ sumc(B)
-</code>
-</gretl-function>
-<gretl-function name="sdc_robust" type="matrix" private="1">
- <params count="1">
-  <param name="x" type="matrix" const="true"/>
- </params>
-<code>/* Compute standard deviation in case of nan values in matrix. */
-matrix m = ok(x)
-matrix d = x .- meanc_robust(x)
-return sqrt(sumc( (m ? d : 0 ).^2 ) ./ sumc(m))
-</code>
-</gretl-function>
 <gretl-function name="get_ahat" type="matrix" private="1">
  <params count="3">
   <param name="mybar" type="matrix" const="true">
@@ -558,7 +581,8 @@ return vec(ones(self.T, self.N) .* ahat')
  </params>
 <code>/* Compute the overall R^2 statistics as defined in Verbeek's textbook.
 return: scalar, overall R^2 statistics */
-return mcorr(y ~ yhat)[1,2]^2
+scalar x = mcorr(y ~ yhat)[1,2]^2
+return ok(x) ? x : 0
 </code>
 </gretl-function>
 <gretl-function name="parnames_to_matrix" type="matrix" private="1">
@@ -569,12 +593,16 @@ return mcorr(y ~ yhat)[1,2]^2
 <code>/* Compile a matrix of series based on an array of series names.
 return: matrix, Including columns as named in 'S'. */
 matrix R
+strings xnames = cnameget(x)
+strings Rnames
 loop foreach i S
-  matrix m = instrings(S, &quot;$i&quot;)
+  matrix m = instrings(xnames, &quot;$i&quot;)
   if nelem(m)
     R ~= x[, m[1]]
+    Rnames += &quot;$i&quot;
   endif
 endloop
+cnameset(R, Rnames)
 return R
 </code>
 </gretl-function>
@@ -596,8 +624,20 @@ endif
  </params>
 <code>/* Select from S only masked entries.
 return: string array */
-mask = vec(mask)
 strings ret = array()
+mask = vec(mask)
+if sum(mask) == 0
+  print &quot;WARNING: Matrix 'mask' has only zeros. Ignore.&quot;
+  return ret
+endif
+if nelem(mask) == 0 || nelem(S) == 0
+  print &quot;WARNING: Either matrix 'mask' or string array S has no valid entries. Ignore.&quot;
+  return ret
+endif
+if nelem(mask) != nelem(S)
+  print &quot;ERROR: String array must have the same dimension as vector. Return empty array&quot;
+  return ret
+endif
 loop i=1..rows(mask)
   if mask[i] == TRUE
     ret += S[i]
