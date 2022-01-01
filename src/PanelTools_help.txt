@@ -1,16 +1,17 @@
-# PanelTools
 Collection of (hopefully) useful functions for dealing with panel datasets.
 
 
-# Public functions
+Public functions
+==================
 
 ## pcum(const series y)
 Compute cumulated value for each panel unit.
-
 Parameters
+----------
     y   - series, target series;
 
 Returns
+-------
 Series with cumulated sum for each cross-sectional unit. NAs are replaced by
 zero before cumulating.
 
@@ -19,9 +20,11 @@ zero before cumulating.
 Compute most frequent value for each cross-sectional unit.
 
 Parameters
+----------
     y   - series, target series
 
 Returns
+-------
 Series with most frequent values for each cross-sectional unit. NA values are
 ignored. If all values are NA for a unit, a series consisting only NA values is
 returned for that unit.
@@ -31,9 +34,11 @@ returned for that unit.
 Compute first valid value for each panel unit.
 
 Parameters
+----------
     y   - series, target series
 
 Returns
+-------
 Series with the first valid value of "y" for each cross-sectional unit. If no
 valid values exists for a unit, NA is returned.
 
@@ -42,9 +47,11 @@ valid values exists for a unit, NA is returned.
 Compute last valid value for each panel unit.
 
 Parameters
+----------
     y   - series, target series
 
 Returns
+-------
 Series with the last valid value of "y" for each cross-sectional unit. If no
 valid values exists for a unit, NA is returned.
 
@@ -53,10 +60,12 @@ valid values exists for a unit, NA is returned.
 Compute the p-th quantile for each unit.
 
 Parameters
+----------
     y     - series, target series
     value - scalar, p-th quantile; must be in the range 0 < value < 1
 
 Returns
+-------
 Series with the p-th quantile for each cross-sectional unit. NA values are
 ignored. If all values are NA for a unit, a series consisting only NA values is
 returned for that unit.
@@ -67,8 +76,10 @@ Compute mean value of "y" across all units per
 time period. Missing values are ignored for computing the mean.
 
 Parameters
+----------
     y        - series, target series
 Returns
+-------
 Series with the mean value value across all units per observation. NA values are
 completely ignored and are not counted.
 
@@ -79,6 +90,7 @@ Compute the total number of observations of "value" in "y" across all units per
 time period. Missing values are completely ignored.
 
 Parameters
+----------
     y        - series, target series
     value    - scalar, Value to search in "y"
     fraction - bool, if TRUE (=1) compute the fraction of observations taking the
@@ -86,6 +98,7 @@ Parameters
                observations instead.
 
 Returns
+-------
 Series with the respective value across all units per observation. NA values are
 completely ignored and are not counted.
 
@@ -94,10 +107,12 @@ completely ignored and are not counted.
 Fits a polynomial trend of order "order" to the input series "y" using OLS for each cross-sectional unit separately. This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
 
 Parameters
+----------
     y        - series, target series
     order    - integer, Order of the polynomial trend
 
 Returns
+-------
 Series of fitted values for each unit. In case 'y' has missing values for a
 specific unit, for this unit a time-series with NAs is returned.
 
@@ -106,10 +121,16 @@ specific unit, for this unit a time-series with NAs is returned.
 Compute basic information about the panel dimension.
 
 Returns
+-------
 Nothing.
 
 
 # Changelog
+v0.3 (01-2022)
+- add new pmedian() function
+- Internal refactoring: make use of the new "Imputer" package
+- internal clean up
+
 v0.2 (07-2021)
 - add new ppolyfit() function
 

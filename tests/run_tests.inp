@@ -5,6 +5,7 @@ set assert stop
 include assertion.gfn
 
 include extra.gfn
+include "../Imputer/src/Imputer.inp" --force # Make sure that path is correct
 include "./src/PanelTools.inp" --force
 
 
@@ -295,12 +296,5 @@ test_ppolyfit(Params)
 
 
 
-
-
-
-
 print "Finished all tests succesfully."
 quit
-
-
-

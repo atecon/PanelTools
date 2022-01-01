@@ -2,8 +2,8 @@
 <gretl-functions>
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
-<version>0.2</version>
-<date>2021-07-22</date>
+<version>0.3</version>
+<date>2022-01-01</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -11,15 +11,17 @@
 Collection of (hopefully) useful functions for dealing with panel datasets.
 
 
-# Public functions
+Public functions
+==================
 
 ## pcum(const series y)
 Compute cumulated value for each panel unit.
-
 Parameters
+----------
     y   - series, target series;
 
 Returns
+-------
 Series with cumulated sum for each cross-sectional unit. NAs are replaced by
 zero before cumulating.
 
@@ -28,9 +30,11 @@ zero before cumulating.
 Compute most frequent value for each cross-sectional unit.
 
 Parameters
+----------
     y   - series, target series
 
 Returns
+-------
 Series with most frequent values for each cross-sectional unit. NA values are
 ignored. If all values are NA for a unit, a series consisting only NA values is
 returned for that unit.
@@ -40,9 +44,11 @@ returned for that unit.
 Compute first valid value for each panel unit.
 
 Parameters
+----------
     y   - series, target series
 
 Returns
+-------
 Series with the first valid value of &quot;y&quot; for each cross-sectional unit. If no
 valid values exists for a unit, NA is returned.
 
@@ -51,9 +57,11 @@ valid values exists for a unit, NA is returned.
 Compute last valid value for each panel unit.
 
 Parameters
+----------
     y   - series, target series
 
 Returns
+-------
 Series with the last valid value of &quot;y&quot; for each cross-sectional unit. If no
 valid values exists for a unit, NA is returned.
 
@@ -62,10 +70,12 @@ valid values exists for a unit, NA is returned.
 Compute the p-th quantile for each unit.
 
 Parameters
+----------
     y     - series, target series
     value - scalar, p-th quantile; must be in the range 0 &lt; value &lt; 1
 
 Returns
+-------
 Series with the p-th quantile for each cross-sectional unit. NA values are
 ignored. If all values are NA for a unit, a series consisting only NA values is
 returned for that unit.
@@ -76,8 +86,10 @@ Compute mean value of &quot;y&quot; across all units per
 time period. Missing values are ignored for computing the mean.
 
 Parameters
+----------
     y        - series, target series
 Returns
+-------
 Series with the mean value value across all units per observation. NA values are
 completely ignored and are not counted.
 
@@ -88,6 +100,7 @@ Compute the total number of observations of &quot;value&quot; in &quot;y&quot; a
 time period. Missing values are completely ignored.
 
 Parameters
+----------
     y        - series, target series
     value    - scalar, Value to search in &quot;y&quot;
     fraction - bool, if TRUE (=1) compute the fraction of observations taking the
@@ -95,6 +108,7 @@ Parameters
                observations instead.
 
 Returns
+-------
 Series with the respective value across all units per observation. NA values are
 completely ignored and are not counted.
 
@@ -103,10 +117,12 @@ completely ignored and are not counted.
 Fits a polynomial trend of order &quot;order&quot; to the input series &quot;y&quot; using OLS for each cross-sectional unit separately. This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
 
 Parameters
+----------
     y        - series, target series
     order    - integer, Order of the polynomial trend
 
 Returns
+-------
 Series of fitted values for each unit. In case 'y' has missing values for a
 specific unit, for this unit a time-series with NAs is returned.
 
@@ -115,18 +131,25 @@ specific unit, for this unit a time-series with NAs is returned.
 Compute basic information about the panel dimension.
 
 Returns
+-------
 Nothing.
 
 
 # Changelog
+v0.3 (01-2022)
+- add new pmedian() function
+- Internal refactoring: make use of the new &quot;Imputer&quot; package
+- internal clean up
+
 v0.2 (07-2021)
 - add new ppolyfit() function
 
 v0.1 (07-2021)
 - initial version
 </help>
-<depends count="1">
-extra </depends>
+<depends count="2">
+Imputer extra </depends>
+<provider>Imputer</provider>
 <gretl-function name="pcum" type="series">
  <params count="1">
   <param name="y" type="series" const="true"/>
@@ -182,6 +205,16 @@ setinfo ret --description=&quot;@desc&quot;
 return ret
 </code>
 </gretl-function>
+<gretl-function name="pmedian" type="series">
+ <params count="1">
+  <param name="y" type="series" const="true"/>
+ </params>
+<code>/* Compute the median for each panel unit. Missing values are ignored
+for computation of the median.
+return: series, Median for each cross-sectional unit. */
+return pquantile(y, 0.5)
+</code>
+</gretl-function>
 <gretl-function name="pxfraction" type="series">
  <params count="3">
   <param name="y" type="series" const="true"/>
@@ -217,22 +250,18 @@ return ret
  <params count="1">
   <param name="y" type="series" const="true"/>
  </params>
-<code>/* Compute first valid value for each panel unit. Expand this constant value for each unit to a series. */
-series ret = helper_pfirst_plast(y, FALSE)
-string desc = get_description(&quot;pfirst&quot;, argname(y), -1)
-setinfo ret --description=&quot;@desc&quot;
-return ret
+<code>/* Compute first valid value for each panel unit. Expand this constant value for each unit to a series.
+Dependency: Imputer.gfn */
+return first(y)
 </code>
 </gretl-function>
 <gretl-function name="plast" type="series">
  <params count="1">
   <param name="y" type="series" const="true"/>
  </params>
-<code>/* Compute last valid value for each panel unit. Expand this constant value for each unit to a series. */
-series ret = helper_pfirst_plast(y, TRUE)
-string desc = get_description(&quot;plast&quot;, argname(y), -1)
-setinfo ret --description=&quot;@desc&quot;
-return ret
+<code>/* Compute last valid value for each panel unit. Expand this constant value for each unit to a series.
+Dependency: Imputer.gfn */
+return last(y)
 </code>
 </gretl-function>
 <gretl-function name="pmode" type="series">
@@ -241,21 +270,8 @@ return ret
  </params>
 <code>/* Compute most frequent value for each cross-sectional unit.
 return: series, constant value for each cross-sectional unit.
-Dependency: extra.gfn */
-errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
-errorif(!nobs(y), &quot;No valid observations.&quot;)
-set skip_missing off
-scalar N = $nobs / $pd
-matrix m = mshape({y}, $pd, N)
-matrix mat = mshape(NA, N, 1)
-loop i=1..N
-  mat[i] = onemode(m[,i])[1]
-endloop
-set skip_missing on
-series ret = pexpand(mat)
-string desc = get_description(&quot;pmode&quot;, argname(y), -1)
-setinfo ret --description=&quot;@desc&quot;
-return ret
+Dependency: extra.gfn and Imputer.gfn */
+return mode(y)
 </code>
 </gretl-function>
 <gretl-function name="pxmean" type="series">
@@ -303,41 +319,6 @@ string desc = get_description(&quot;ppolyfit&quot;, argname(y), order)
 setinfo ret --description=&quot;@desc&quot;
 set skip_missing on
 return ret
-</code>
-</gretl-function>
-<gretl-function name="helper_pfirst_plast" type="series" private="1">
- <params count="2">
-  <param name="y" type="series" const="true"/>
-  <param name="do_plast" type="bool" const="true"/>
- </params>
-<code>/* Wrapper for pfirst() and plast()
-return: series, respective values. */
-errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
-set skip_missing off
-scalar N = $nobs / $pd
-matrix m = mshape({y}, $pd, N)
-matrix ret = mshape(NA, N, 1)
-loop i=1..N
-  matrix mask = ok(m[,i])
-  matrix vals = selifr(m[,i], mask)
-  scalar idx = do_plast == TRUE ? rows(vals) : 1
-  ret[i] = sum(mask) ? vals[idx] : NA
-endloop
-set skip_missing on
-return pexpand(ret)
-</code>
-</gretl-function>
-<gretl-function name="get_description" type="string" private="1">
- <params count="3">
-  <param name="fname" type="string" const="true"/>
-  <param name="yname" type="string" const="true"/>
-  <param name="value" type="scalar"/>
- </params>
-<code>/* Retrieve series' description.
-return: string */
-scalar value = !exists(value) ? 1 : value
-bundle B = _( ppolyfit = sprintf(&quot;polynomial fit of %s (order=%d)&quot;, yname, value), pcum = sprintf(&quot;cumuluated values of %s&quot;, yname), pquantile = sprintf(&quot;quantile (q=%g) values of %s&quot;, value, yname), pxfraction = sprintf(&quot;cross-sectional fractions of %s (value=%g)&quot;, yname, value), pfirst = sprintf(&quot;first valid values of %s&quot;, yname), plast = sprintf(&quot;last valid values of %s&quot;, yname), pmode = sprintf(&quot;modes of %s&quot;, yname), pxmean = sprintf(&quot;cross-sectional means of %s&quot;, yname) )
-return B[&quot;@fname&quot;]
 </code>
 </gretl-function>
 <sample-script>

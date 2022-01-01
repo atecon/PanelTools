@@ -25,28 +25,9 @@ function series pmode (const series y)
     /* Compute most frequent value for each cross-sectional unit.
     return: series, constant value for each cross-sectional unit.
 
-    Dependency: extra.gfn */
+    Dependency: extra.gfn and Imputer.gfn */
 
-    errorif($datatype != 3, "Only for panel dataset.")
-    errorif(!nobs(y), "No valid observations.")
-
-    set skip_missing off
-
-    scalar N = $nobs / $pd
-    matrix m = mshape({y}, $pd, N)
-    matrix mat = mshape(NA, N, 1)
-
-    loop i=1..N
-        mat[i] = onemode(m[,i])[1]
-    endloop
-
-    set skip_missing on
-
-    series ret = pexpand(mat)
-    string desc = get_description("pmode", argname(y), -1)
-    setinfo ret --description="@desc"
-
-    return ret
+    return mode(y)
 end function
 
 
@@ -91,6 +72,15 @@ function series pquantile (const series y,
 end function
 
 
+function series pmedian (const series y)
+    /* Compute the median for each panel unit. Missing values are ignored
+    for computation of the median.
+    return: series, Median for each cross-sectional unit. */
+
+    return pquantile(y, 0.5)
+end function
+
+
 function series pxfraction (const series y,
                             const scalar value "Value to search",
                             const bool fraction[FALSE] "Fraction instead of total number")
@@ -125,52 +115,21 @@ end function
 
 
 
-function series helper_pfirst_plast (const series y, const bool do_plast)
-    /* Wrapper for pfirst() and plast()
-    return: series, respective values. */
-
-    errorif($datatype != 3, "Only for panel dataset.")
-
-    set skip_missing off
-
-    scalar N = $nobs / $pd
-    matrix m = mshape({y}, $pd, N)
-    matrix ret = mshape(NA, N, 1)
-
-    loop i=1..N
-        matrix mask = ok(m[,i])
-        matrix vals = selifr(m[,i], mask)
-
-        scalar idx = do_plast == TRUE ? rows(vals) : 1
-        ret[i] = sum(mask) ? vals[idx] : NA
-    endloop
-
-    set skip_missing on
-
-    return pexpand(ret)
-end function
-
 function series pfirst (const series y)
-    /* Compute first valid value for each panel unit. Expand this constant value for each unit to a series. */
+    /* Compute first valid value for each panel unit. Expand this constant value for each unit to a series.
 
-    series ret = helper_pfirst_plast(y, FALSE)
+    Dependency: Imputer.gfn */
 
-    string desc = get_description("pfirst", argname(y), -1)
-    setinfo ret --description="@desc"
-
-    return ret
+    return first(y)
 end function
 
 
 function series plast (const series y)
-    /* Compute last valid value for each panel unit. Expand this constant value for each unit to a series. */
+    /* Compute last valid value for each panel unit. Expand this constant value for each unit to a series.
 
-    series ret = helper_pfirst_plast(y, TRUE)
+    Dependency: Imputer.gfn */
 
-    string desc = get_description("plast", argname(y), -1)
-    setinfo ret --description="@desc"
-
-    return ret
+    return last(y)
 end function
 
 
@@ -230,27 +189,4 @@ function series ppolyfit(const series y, const int order[1::])
     set skip_missing on
 
     return ret
-end function
-
-
-function string get_description (const string fname,
-                                 const string yname,
-                                 scalar value)
-    /* Retrieve series' description.
-    return: string */
-
-    scalar value = !exists(value) ? 1 : value
-
-    bundle B = _(\
-                 ppolyfit = sprintf("polynomial fit of %s (order=%d)", yname, value),\
-                pcum = sprintf("cumuluated values of %s", yname),\
-                pquantile = sprintf("quantile (q=%g) values of %s", value, yname),\
-                pxfraction = sprintf("cross-sectional fractions of %s (value=%g)", yname, value),\
-                pfirst = sprintf("first valid values of %s", yname),\
-                plast = sprintf("last valid values of %s", yname),\
-                pmode = sprintf("modes of %s", yname),\
-                pxmean = sprintf("cross-sectional means of %s", yname)\
-                )
-
-    return B["@fname"]
 end function
