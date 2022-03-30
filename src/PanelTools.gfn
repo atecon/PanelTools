@@ -3,7 +3,7 @@
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>0.3</version>
-<date>2021-09-20</date>
+<date>2022-03-30</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -156,11 +156,10 @@ Parameters
     N        - integer, Number of cross-sectional units
 
 Returns
-Bundle object comprising both point estimates of coefficients (key: &quot;coeff&quot;) and
-estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
+Bundle object comprising point estimates of coefficients (key: &quot;coeff&quot;).
 
 
-## pfcast (const matrix x, const bundle Model, const bool verbose[FALSE])
+## pfcast (const matrix X, const bundle Model, const bool verbose[FALSE])
 Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
 added. This is the same treatment as gretl does for the panel fixed-effects model when
 applying the 'fcast' command.
@@ -196,18 +195,14 @@ Row vector with standard deviation values for each column.
 
 
 # Changelog
-v0.4 (XX-2021)
-- add new meanc_robust() and sdc_robust() functions
--
-
-v0.3 (07-2021)
-- add new mpmean(), fe_estimator(), pols_estimator() and pfcast() functions
+v0.3 (03-2022)
+- Add new functions mpmean(), fe_estimator(), pols_estimator(), pfcast(),  meanc_robust() and sdc_robust()
 
 v0.2 (07-2021)
-- add new ppolyfit() function
+- Add new ppolyfit() function
 
 v0.1 (07-2021)
-- initial version
+- Initial version
 </help>
 <depends count="1">
 extra </depends>
@@ -356,8 +351,8 @@ return ret
 </gretl-function>
 <gretl-function name="panelinfo" type="void">
 <code>printf &quot;\nINFO: Information on panel dimensions:\n&quot;
-printf &quot;Cross-sectional units = %d\n&quot;, ($nobs / $pd)
-printf &quot;Time-dimension %d observations\n\n&quot;, $pd
+printf &quot;Number of cross-sectional units = %d\n&quot;, ($nobs / $pd)
+printf &quot;Number of time-dimension %d observations\n\n&quot;, $pd
 </code>
 </gretl-function>
 <gretl-function name="ppolyfit" type="series">
@@ -395,7 +390,8 @@ return ret
   <param name="N" type="int" const="true"/>
  </params>
 <code>/* Compute vector of mean values of the column vector &quot;m&quot; for each
-cross-sectional unit. Matrix equivalent to gretl's built-in pmean() function.
+cross-sectional unit. Missing values are automatically handled.
+Matrix equivalent to gretl's built-in pmean() function.
 return: matrix, Stacked time-series of means of &quot;m&quot;. */
 set skip_missing off
 scalar T = rows(m) / N
@@ -456,7 +452,8 @@ return B
 <description>Number of cross-sectional units</description>
   </param>
  </params>
-<code>/* Pooled OLS estimation using matrices.
+<code>/* Pooled OLS estimation using matrices without inference.
+Equivalent to gretl's &quot;panel&quot; command with the option &quot;--pooled&quot;.
 return: bundle, Model output. */
 bundle B = model_bundle_basics(y, X, N)
 string B.estimator = &quot;ols&quot;
@@ -471,7 +468,7 @@ return B
 </gretl-function>
 <gretl-function name="pfcast" type="matrix">
  <params count="3">
-  <param name="x" type="matrix" const="true">
+  <param name="xtest" type="matrix" const="true">
 <description>Values of test set</description>
   </param>
   <param name="Model" type="bundle" const="true">
@@ -479,20 +476,19 @@ return B
   </param>
   <param name="verbose" type="bool" default="0" const="true"/>
  </params>
-<code>/* Compute static predictions for a given model.
-return: matrix, Stacked horizon by N time-series of forecasts. */
-errorif(rows(Model.coeff) != cols(x), &quot;Number of variables does not match length of coefficient vector.&quot;)
-scalar horizon = rows(x) / Model.N
+<code>/* Compute static point forecasts for a given model.
+return: matrix, Stacked &quot;horizon&quot; by &quot;N&quot; time-series of forecasts. */
+errorif(rows(Model.coeff) != cols(xtest), &quot;Number of variables does not match length of coefficient vector.&quot;)
+scalar horizon = rows(xtest) / Model.N
 if verbose
   print &quot;INFO: Compute predictions.&quot;
-  flush
 endif
-matrix fc = x * Model.coeff
+matrix fc = xtest * Model.coeff
 if Model.estimator == &quot;fixed_effects&quot;  # add fixed-effects
   fc = mshape(fc, horizon, Model.N)
   fc = fc .+ mshape(Model.ahat, Model.T, Model.N)[1,]  # N by 1
 endif
-if verbose &gt; 1
+if verbose
   print &quot;INFO: Finished model estimation.&quot;
 endif
 return vec(fc)
