@@ -453,6 +453,11 @@ function bundle pols_estimator (const matrix y,
 
     rnameset(B.coeff, cnameget(X))
 
+    matrix B.xmat = parnames_to_matrix(X, B.parnames)
+    matrix B.yhat = B.xmat * B.coeff
+    matrix B.uhat = y - B.yhat
+    matrix B.rsq = rsq_overall(y, B.yhat)
+
     return B
 end function
 
@@ -484,11 +489,15 @@ function matrix drop_constants (const matrix m, matrix *mask[null])
 end function
 
 
-function matrix pfcast (const matrix xtest "Values of test set",
+function matrix pfcast (matrix xtest "Values of test set",
                         const bundle Model "Model object",
                         const bool verbose[FALSE])
     /* Compute static point forecasts for a given model.
     return: matrix, Stacked "horizon" by "N" time-series of forecasts. */
+
+    if Model.estimator == "fixed_effects"
+        matrix xtest = drop_constants(xtest)
+    endif
 
     errorif(rows(Model.coeff) != cols(xtest),\
             "Number of variables does not match length of coefficient vector.")
@@ -500,6 +509,7 @@ function matrix pfcast (const matrix xtest "Values of test set",
     endif
 
     matrix fc = xtest * Model.coeff
+
     if Model.estimator == "fixed_effects"  # add fixed-effects
         fc = mshape(fc, horizon, Model.N)
         fc = fc .+ mshape(Model.ahat, Model.T, Model.N)[1,]  # N by 1
