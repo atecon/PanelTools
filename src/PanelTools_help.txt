@@ -151,7 +151,7 @@ Bundle object comprising both point estimates of coefficients (key: "coeff") and
 estimated fixed-effects stored as stacked time-series (key: "ahat").
 
 
-## panel_predict (const matrix x, const bundle Model, const bool verbose[FALSE])
+## pfcast (const matrix x, const bundle Model, const bool verbose[FALSE])
 Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
 added. This is the same treatment as gretl does for the panel fixed-effects model when
 applying the 'fcast' command.
@@ -187,15 +187,11 @@ Row vector with standard deviation values for each column.
 
 
 # Changelog
-v0.4 (XX-2021)
-- add new meanc_robust() and sdc_robust() functions
--
-
-v0.3 (07-2021)
-- add new mpmean(), fe_estimator(), pols_estimator() and panel_predict() functions
+v0.3 (03-2022)
+- Add new functions mpmean(), fe_estimator(), pols_estimator(), pfcast(),  meanc_robust() and sdc_robust()
 
 v0.2 (07-2021)
-- add new ppolyfit() function
+- Add new ppolyfit() function
 
 v0.1 (07-2021)
-- initial version
+- Initial version

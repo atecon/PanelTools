@@ -124,7 +124,6 @@ function series pxfraction (const series y,
 end function
 
 
-
 function series helper_pfirst_plast (const series y, const bool do_plast)
     /* Wrapper for pfirst() and plast()
     return: series, respective values. */
@@ -190,8 +189,8 @@ end function
 
 function void panelinfo (void)
     printf "\nINFO: Information on panel dimensions:\n"
-    printf "Cross-sectional units = %d\n", ($nobs / $pd)
-    printf "Time-dimension %d observations\n\n", $pd
+    printf "Number of cross-sectional units = %d\n", ($nobs / $pd)
+    printf "Number of time-dimension %d observations\n\n", $pd
 end function
 
 
@@ -242,7 +241,7 @@ function string get_description (const string fname,
     scalar value = !exists(value) ? 1 : value
 
     bundle B = _(\
-                 ppolyfit = sprintf("polynomial fit of %s (order=%d)", yname, value),\
+                ppolyfit = sprintf("polynomial fit of %s (order=%d)", yname, value),\
                 pcum = sprintf("cumuluated values of %s", yname),\
                 pquantile = sprintf("quantile (q=%g) values of %s", value, yname),\
                 pxfraction = sprintf("cross-sectional fractions of %s (value=%g)", yname, value),\
@@ -260,6 +259,7 @@ function matrix meanc_robust (const matrix X)
     /* Compute mean values for each column even in case of missing values. */
 
     matrix B = ok(X)
+
     return sumc(B ? X : 0) ./ sumc(B)
 end function
 
@@ -269,14 +269,15 @@ function matrix sdc_robust (const matrix x)
 
     matrix m = ok(x)
     matrix d = x .- meanc_robust(x)
+
     return sqrt(sumc( (m ? d : 0 ).^2 ) ./ sumc(m))
 end function
 
 
-
 function matrix mpmean (matrix m, const int N)
     /* Compute vector of mean values of the column vector "m" for each
-    cross-sectional unit. Matrix equivalent to gretl's built-in pmean() function.
+    cross-sectional unit. Missing values are automatically handled.
+    Matrix equivalent to gretl's built-in pmean() function.
 
     return: matrix, Stacked time-series of means of "m". */
 
@@ -303,8 +304,8 @@ function matrix get_ahat (const matrix mybar "Unit-specific mean of 'y'",
     /* Compute fixed-effects.
     return: matrix, Column vector with fixed-effects as stacked time-series. */
 
-
     mybar_values = vec(mshape(mybar, self.T, self.N)[1,]) # N by 1
+
     # Extract vector of unit-specific mean values: N by k
     matrix x = mshape(NA, self.N, cols(mxbar))
     loop i=1..cols(mxbar)
@@ -333,6 +334,7 @@ function bundle fe_estimator (const matrix y,
     matrix mxbar = mpmean(X, N)
     matrix endog = y .- mybar
     matrix exog = X .- mxbar
+
     print "INFO: Drop eventual constant series from list of selected features."
     scalar nc = cols(exog)
     matrix exog = drop_constants(exog, &mask)
@@ -435,7 +437,8 @@ end function
 function bundle pols_estimator (const matrix y,
                                 const matrix X,
                                 const int N[1::] "Number of cross-sectional units")
-    /* Pooled OLS estimation using matrices.
+    /* Pooled OLS estimation using matrices without inference.
+    Equivalent to gretl's "panel" command with the option "--pooled".
     return: bundle, Model output. */
 
     bundle B = model_bundle_basics(y, X, N)
@@ -481,29 +484,28 @@ function matrix drop_constants (const matrix m, matrix *mask[null])
 end function
 
 
-function matrix panel_predict (const matrix x "Values of test set",
-                               const bundle Model "Model object",
-                               const bool verbose[FALSE])
-    /* Compute static predictions for a given model.
-    return: matrix, Stacked horizon by N time-series of forecasts. */
+function matrix pfcast (const matrix xtest "Values of test set",
+                        const bundle Model "Model object",
+                        const bool verbose[FALSE])
+    /* Compute static point forecasts for a given model.
+    return: matrix, Stacked "horizon" by "N" time-series of forecasts. */
 
-    errorif(rows(Model.coeff) != cols(x),\
+    errorif(rows(Model.coeff) != cols(xtest),\
             "Number of variables does not match length of coefficient vector.")
 
-    scalar horizon = rows(x) / Model.N
+    scalar horizon = rows(xtest) / Model.N
 
     if verbose
         print "INFO: Compute predictions."
-        flush
     endif
 
-    matrix fc = x * Model.coeff
+    matrix fc = xtest * Model.coeff
     if Model.estimator == "fixed_effects"  # add fixed-effects
         fc = mshape(fc, horizon, Model.N)
         fc = fc .+ mshape(Model.ahat, Model.T, Model.N)[1,]  # N by 1
     endif
 
-    if verbose > 1
+    if verbose
         print "INFO: Finished model estimation."
     endif
 

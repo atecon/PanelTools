@@ -306,9 +306,7 @@ function void test_mpmean (const bundles P)
     print "Start testing function mpmean()."
 
     loop foreach i P
-        # Given
-
-        # When
+        # Given + When
         matrix actual = mpmean(P[i].input, P[i].N)
 
         # Then
@@ -548,9 +546,102 @@ end function
 test_parnames_to_matrix(Params)
 
 
+function void test_model_bundle_basics (void)
+    print "Start testing function model_bundle_basics()"
+
+    # Given
+    matrix y = {1, 2, 3, 4, 5, 6}'
+    matrix X = mnormal(6, 2)
+    scalar N = 2
+    string NAME_Y = "endog"
+    strings NAMES_X = defarray("exog1", "exog 2")
+    cnameset(y, NAME_Y)
+    cnameset(X, NAMES_X)
+
+    # When
+    bundle expected = _(N = N,\
+                        T = rows(y) / N,\
+                        depvar = NAME_Y,\
+                        parnames = NAMES_X,\
+                        error = FALSE)
+
+    bundle actual = model_bundle_basics(y, X, N)
+
+    # Then
+    loop foreach i expected
+        if typestr(typeof(actual["$i"])) == "array"
+            continue
+        else
+            assert(actual["$i"] == expected["$i"])
+        endif
+    endloop
+end function
+test_model_bundle_basics()
+
+
+
+# ===============
+## NOT TESTED YET
+# ===============
+function void test_pfcast (void)
+    print "Start testing function pfcast()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_pfcast()
+
+
+function void test_meanc_robust (void)
+    print "Start testing function meanc_robust()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_meanc_robust()
+
+
+function void test_sdc_robust (void)
+    print "Start testing function sdc_robust()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_sdc_robust()
+
+
+function void test_get_description (void)
+    print "Start testing function get_description()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_get_description()
+
+
+function void test_helper_pfirst_plast (void)
+    print "Start testing function helper_pfirst_plast()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_helper_pfirst_plast()
+
 
 print "Finished all tests succesfully."
-quit
-
-
 

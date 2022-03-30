@@ -160,7 +160,7 @@ Bundle object comprising both point estimates of coefficients (key: &quot;coeff&
 estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
 
 
-## panel_predict (const matrix x, const bundle Model, const bool verbose[FALSE])
+## pfcast (const matrix x, const bundle Model, const bool verbose[FALSE])
 Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
 added. This is the same treatment as gretl does for the panel fixed-effects model when
 applying the 'fcast' command.
@@ -201,7 +201,7 @@ v0.4 (XX-2021)
 -
 
 v0.3 (07-2021)
-- add new mpmean(), fe_estimator(), pols_estimator() and panel_predict() functions
+- add new mpmean(), fe_estimator(), pols_estimator() and pfcast() functions
 
 v0.2 (07-2021)
 - add new ppolyfit() function
@@ -469,7 +469,7 @@ rnameset(B.coeff, cnameget(X))
 return B
 </code>
 </gretl-function>
-<gretl-function name="panel_predict" type="matrix">
+<gretl-function name="pfcast" type="matrix">
  <params count="3">
   <param name="x" type="matrix" const="true">
 <description>Values of test set</description>
