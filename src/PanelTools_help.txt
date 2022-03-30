@@ -74,7 +74,7 @@ completely ignored and are not counted.
 
 
 ## pxfraction(const series y, const scalar value "Value to search",
-             const bool fraction[FALSE] "Fraction instead of total number")
+              const bool fraction[FALSE] "Fraction instead of total number")
 Compute the total number of observations of "value" in "y" across all units per
 time period. Missing values are completely ignored.
 
