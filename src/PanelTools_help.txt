@@ -147,11 +147,10 @@ Parameters
     N        - integer, Number of cross-sectional units
 
 Returns
-Bundle object comprising both point estimates of coefficients (key: "coeff") and
-estimated fixed-effects stored as stacked time-series (key: "ahat").
+Bundle object comprising point estimates of coefficients (key: "coeff").
 
 
-## pfcast (const matrix x, const bundle Model, const bool verbose[FALSE])
+## pfcast (const matrix X, const bundle Model, const bool verbose[FALSE])
 Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
 added. This is the same treatment as gretl does for the panel fixed-effects model when
 applying the 'fcast' command.
