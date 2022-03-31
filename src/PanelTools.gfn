@@ -193,7 +193,7 @@ Row vector with standard deviation values for each column.
 v0.3 (03-2022)
 - Add new functions mpmean(), meanc_robust() and sdc_robust()
 - Add new function fe_estimator() for estimating a fixed-effects model using matrices as inputs (no inference supported, yet)
-- Add new function pols_estimator() for estimating a pooled-OLS model using matrices as inputs (no inference supported, yet)
+- Add new function pols_estimator() for estimating a pooled-OLS model using matrices as inputs
 - Add new function pfcast() for computing predictions using some supported panel model using matrices.
 
 v0.2 (07-2021)
