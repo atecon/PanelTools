@@ -627,7 +627,7 @@ return R
  </params>
 <code>ndropped = before - after
 if ndropped &gt; 0
-  printf &quot;INFO: Dropped %d columns from feature list.\n&quot;, ndropped
+  printf &quot;INFO: Dropped %d column(s) from feature list.\n&quot;, ndropped
 endif
 </code>
 </gretl-function>

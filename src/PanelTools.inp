@@ -406,7 +406,7 @@ end function
 function void print_number_of_droppped_cols (const int before[0::], const int after[0::])
     ndropped = before - after
     if ndropped > 0
-        printf "INFO: Dropped %d columns from feature list.\n", ndropped
+        printf "INFO: Dropped %d column(s) from feature list.\n", ndropped
     endif
 end function
 
