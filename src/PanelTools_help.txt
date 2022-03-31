@@ -139,7 +139,6 @@ estimated fixed-effects stored as stacked time-series (key: "ahat").
 
 ## pols_estimator (const matrix y, const matrix X, const int N[1::])
 Matrix-based equivalent of gretl's built-in pooled ols function (see 'help panel').
-Currently no inference is done.
 
 Parameters
     y        - matrix, Column vector of stacked time-series
@@ -151,9 +150,7 @@ Bundle object comprising point estimates of coefficients (key: "coeff").
 
 
 ## pfcast (const matrix X, const bundle Model, const bool verbose[FALSE])
-Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
-added. This is the same treatment as gretl does for the panel fixed-effects model when
-applying the 'fcast' command.
+Compute static predictions for a given model. For the fixed-effects, the fixed-effects are added. This is the same treatment as gretl does for the panel fixed-effects model when applying the 'fcast' command.
 
 Parameters
     X        - matrix, Matrix of regressors of stacked time-series for test set.
@@ -161,9 +158,7 @@ Parameters
     verbose  - bool, print details (optional, default = FALSE)
 
 Returns
-Matrix of stacked forecasts. "N" stacked time-series of length "horizon". The parameter
-"horizon" is internally determined by the input dimension of "X" and the number of
-cross-sectional units "N" as specified in the "Model" bundle.
+Matrix of stacked forecasts. "N" stacked time-series of length "horizon". The parameter "horizon" is internally determined by the input dimension of "X" and the number of cross-sectional units "N" as specified in the "Model" bundle.
 
 
 ## mean_robust (const matrix X)

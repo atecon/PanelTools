@@ -83,7 +83,7 @@ completely ignored and are not counted.
 
 
 ## pxfraction(const series y, const scalar value &quot;Value to search&quot;,
-             const bool fraction[FALSE] &quot;Fraction instead of total number&quot;)
+              const bool fraction[FALSE] &quot;Fraction instead of total number&quot;)
 Compute the total number of observations of &quot;value&quot; in &quot;y&quot; across all units per
 time period. Missing values are completely ignored.
 
@@ -148,7 +148,6 @@ estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
 
 ## pols_estimator (const matrix y, const matrix X, const int N[1::])
 Matrix-based equivalent of gretl's built-in pooled ols function (see 'help panel').
-Currently no inference is done.
 
 Parameters
     y        - matrix, Column vector of stacked time-series
@@ -160,9 +159,7 @@ Bundle object comprising point estimates of coefficients (key: &quot;coeff&quot;
 
 
 ## pfcast (const matrix X, const bundle Model, const bool verbose[FALSE])
-Compute static predictions for a given model. For the fixed-effects, the fixed-effects are
-added. This is the same treatment as gretl does for the panel fixed-effects model when
-applying the 'fcast' command.
+Compute static predictions for a given model. For the fixed-effects, the fixed-effects are added. This is the same treatment as gretl does for the panel fixed-effects model when applying the 'fcast' command.
 
 Parameters
     X        - matrix, Matrix of regressors of stacked time-series for test set.
@@ -170,9 +167,7 @@ Parameters
     verbose  - bool, print details (optional, default = FALSE)
 
 Returns
-Matrix of stacked forecasts. &quot;N&quot; stacked time-series of length &quot;horizon&quot;. The parameter
-&quot;horizon&quot; is internally determined by the input dimension of &quot;X&quot; and the number of
-cross-sectional units &quot;N&quot; as specified in the &quot;Model&quot; bundle.
+Matrix of stacked forecasts. &quot;N&quot; stacked time-series of length &quot;horizon&quot;. The parameter &quot;horizon&quot; is internally determined by the input dimension of &quot;X&quot; and the number of cross-sectional units &quot;N&quot; as specified in the &quot;Model&quot; bundle.
 
 
 ## mean_robust (const matrix X)
@@ -438,11 +433,18 @@ if B.error
   return B
 endif
 rnameset(B.coeff, B.parnames)
+scalar B.ncoeff = cols(exog)  # &quot;const&quot; may have been dropped
 matrix B.xmat = parnames_to_matrix(X, B.parnames)
 matrix B.ahat = get_ahat(mybar, mxbar, B)
 matrix B.yhat = B.ahat + B.xmat * B.coeff
 matrix B.uhat = y - B.yhat
 matrix B.rsq = rsq_overall(y, B.yhat)
+scalar B.ess = B.uhat'B.uhat
+scalar B.sigma = sdc(B.uhat, (B.N * (B.T - 1) - B.ncoeff))
+/* TODO: Needs more work to be done
+matrix B.vcv = B.sigma^2 * inv(X'X)     # estimated variance of coeff
+matrix B.stderr = sqrt(diag(B.vcv))
+*/
 set skip_missing on
 return B
 </code>
@@ -460,16 +462,22 @@ Equivalent to gretl's &quot;panel&quot; command with the option &quot;--pooled&q
 return: bundle, Model output. */
 bundle B = model_bundle_basics(y, X, N)
 string B.estimator = &quot;ols&quot;
-catch matrix B.coeff = mols(y, X)
+matrix uhat = mshape(NA, rows(y), 1)
+matrix vcv = mshape(NA, cols(X), cols(X))
+catch matrix B.coeff = mols(y, X, &amp;uhat, &amp;vcv)
 B.error = $error
 if B.error
   return B
 endif
 rnameset(B.coeff, cnameget(X))
+matrix B.vcv = vcv
+matrix B.uhat = uhat
 matrix B.xmat = parnames_to_matrix(X, B.parnames)
 matrix B.yhat = B.xmat * B.coeff
-matrix B.uhat = y - B.yhat
 matrix B.rsq = rsq_overall(y, B.yhat)
+scalar B.ess = B.uhat'B.uhat
+scalar B.sigma = sdc(B.uhat, (B.NT - B.ncoeff))
+matrix B.stderr = sqrt(diag(vcv))
 return B
 </code>
 </gretl-function>
@@ -665,8 +673,10 @@ return: bundle, basic initial information. */
 bundle B
 scalar B.N = N
 scalar B.T = rows(y) / B.N # consider the case that y is sub-sampled
+scalar B.NT = B.N * B.T
 string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : &quot;&quot;
 strings B.parnames = cnameget(X)
+scalar B.ncoeff = cols(X)
 scalar B.error = FALSE
 return B
 </code>
@@ -734,8 +744,8 @@ panel invest const kstock value --pooled # gretl using series
 matrix y = {invest}
 list xlist = const kstock value
 matrix X = {xlist}
+
 bundle model = pols_estimator(y, X, n_units)  # actual estimation
-print model
 print model.coeff       # point estimates
 print model.rsq         # R^2
 
@@ -755,6 +765,7 @@ bundle model = fe_estimator(ytrain, Xtrain, n_units)  # actual estimation
 print model
 print model.coeff       # point estimates
 print model.ahat        # fixed-effects
+
 
 # Prediction using the test set
 smpl trainset == FALSE --restrict --replace

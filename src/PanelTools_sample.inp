@@ -49,8 +49,8 @@ panel invest const kstock value --pooled # gretl using series
 matrix y = {invest}
 list xlist = const kstock value
 matrix X = {xlist}
+
 bundle model = pols_estimator(y, X, n_units)  # actual estimation
-print model
 print model.coeff       # point estimates
 print model.rsq         # R^2
 
@@ -70,6 +70,7 @@ bundle model = fe_estimator(ytrain, Xtrain, n_units)  # actual estimation
 print model
 print model.coeff       # point estimates
 print model.ahat        # fixed-effects
+
 
 # Prediction using the test set
 smpl trainset == FALSE --restrict --replace

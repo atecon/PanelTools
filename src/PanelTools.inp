@@ -352,11 +352,18 @@ function bundle fe_estimator (const matrix y,
     endif
     rnameset(B.coeff, B.parnames)
 
+    scalar B.ncoeff = cols(exog)  # "const" may have been dropped
     matrix B.xmat = parnames_to_matrix(X, B.parnames)
     matrix B.ahat = get_ahat(mybar, mxbar, B)
     matrix B.yhat = B.ahat + B.xmat * B.coeff
     matrix B.uhat = y - B.yhat
     matrix B.rsq = rsq_overall(y, B.yhat)
+    scalar B.ess = B.uhat'B.uhat
+    scalar B.sigma = sdc(B.uhat, (B.N * (B.T - 1) - B.ncoeff))
+    /* TODO: Needs more work to be done
+    matrix B.vcv = B.sigma^2 * inv(X'X)     # estimated variance of coeff
+    matrix B.stderr = sqrt(diag(B.vcv))
+    */
 
     set skip_missing on
 
@@ -444,19 +451,24 @@ function bundle pols_estimator (const matrix y,
     bundle B = model_bundle_basics(y, X, N)
     string B.estimator = "ols"
 
-    catch matrix B.coeff = mols(y, X)
+    matrix uhat = mshape(NA, rows(y), 1)
+    matrix vcv = mshape(NA, cols(X), cols(X))
 
+    catch matrix B.coeff = mols(y, X, &uhat, &vcv)
     B.error = $error
     if B.error
         return B
     endif
 
     rnameset(B.coeff, cnameget(X))
-
+    matrix B.vcv = vcv
+    matrix B.uhat = uhat
     matrix B.xmat = parnames_to_matrix(X, B.parnames)
     matrix B.yhat = B.xmat * B.coeff
-    matrix B.uhat = y - B.yhat
     matrix B.rsq = rsq_overall(y, B.yhat)
+    scalar B.ess = B.uhat'B.uhat
+    scalar B.sigma = sdc(B.uhat, (B.NT - B.ncoeff))
+    matrix B.stderr = sqrt(diag(vcv))
 
     return B
 end function
@@ -472,8 +484,10 @@ function bundle model_bundle_basics (const matrix y,
 
     scalar B.N = N
     scalar B.T = rows(y) / B.N # consider the case that y is sub-sampled
+    scalar B.NT = B.N * B.T
     string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : ""
     strings B.parnames = cnameget(X)
+    scalar B.ncoeff = cols(X)
     scalar B.error = FALSE
 
     return B
