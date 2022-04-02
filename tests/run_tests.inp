@@ -466,8 +466,8 @@ end function
 test_rsq_overall(Params)
 
 
-function void test_number_of_droppped_cols ()
-    print "Start testing print_number_of_droppped_cols()"
+function void test_number_of_dropped_cols ()
+    print "Start testing print_number_of_dropped_cols()"
 
     # Given
     scalar x = 4
@@ -477,13 +477,13 @@ function void test_number_of_droppped_cols ()
 
     # When
     outfile --buffer=actual
-        print_number_of_droppped_cols(x, y)
+        print_number_of_dropped_cols(x, y)
     end outfile
 
     # Then
     assert(actual == expected)
 end function
-test_number_of_droppped_cols()
+test_number_of_dropped_cols()
 
 
 bundles Params = null

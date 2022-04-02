@@ -420,10 +420,10 @@ matrix mybar = mpmean(y, N)
 matrix mxbar = mpmean(X, N)
 matrix endog = y .- mybar
 matrix exog = X .- mxbar
-print &quot;INFO: Drop eventual constant series from list of selected features.&quot;
+# Drop eventual intercept
 scalar nc = cols(exog)
 matrix exog = drop_constants(exog, &amp;mask)
-print_number_of_droppped_cols(nc, cols(exog))
+print_number_of_dropped_cols(nc, cols(exog))
 matrix mxbar = selifc(mxbar, mask)
 # As some columns may be dropped, we need to update B.parnames
 B.parnames = mask_string_array(B.parnames, mask)
@@ -623,7 +623,7 @@ cnameset(R, Rnames)
 return R
 </code>
 </gretl-function>
-<gretl-function name="print_number_of_droppped_cols" type="void" private="1">
+<gretl-function name="print_number_of_dropped_cols" type="void" private="1">
  <params count="2">
   <param name="before" type="int" min="0" const="true"/>
   <param name="after" type="int" min="0" const="true"/>

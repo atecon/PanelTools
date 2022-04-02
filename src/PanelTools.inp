@@ -335,10 +335,11 @@ function bundle fe_estimator (const matrix y,
     matrix endog = y .- mybar
     matrix exog = X .- mxbar
 
-    print "INFO: Drop eventual constant series from list of selected features."
+
+    # Drop eventual intercept
     scalar nc = cols(exog)
     matrix exog = drop_constants(exog, &mask)
-    print_number_of_droppped_cols(nc, cols(exog))
+    print_number_of_dropped_cols(nc, cols(exog))
 
     matrix mxbar = selifc(mxbar, mask)
 
@@ -406,7 +407,7 @@ function matrix parnames_to_matrix (const matrix x, const strings S)
 end function
 
 
-function void print_number_of_droppped_cols (const int before[0::], const int after[0::])
+function void print_number_of_dropped_cols (const int before[0::], const int after[0::])
     ndropped = before - after
     if ndropped > 0
         printf "INFO: Dropped %d column(s) from feature list.\n", ndropped
