@@ -464,6 +464,7 @@ function bundle pols_estimator (const matrix y,
     endif
 
     rnameset(B.coeff, cnameget(X))
+    scalar B.ncoeff = cols(X)
     matrix B.vcv = vcv
     matrix B.uhat = uhat
     matrix B.xmat = parnames_to_matrix(X, B.parnames)

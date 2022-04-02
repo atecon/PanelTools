@@ -424,26 +424,28 @@ print &quot;INFO: Drop eventual constant series from list of selected features.&
 scalar nc = cols(exog)
 matrix exog = drop_constants(exog, &amp;mask)
 print_number_of_droppped_cols(nc, cols(exog))
-mxbar = selifc(mxbar, mask)
+matrix mxbar = selifc(mxbar, mask)
 # As some columns may be dropped, we need to update B.parnames
 B.parnames = mask_string_array(B.parnames, mask)
-catch matrix B.coeff = mols(endog, exog)
+matrix uhat = mshape(NA, rows(endog), 1)
+matrix vcv = mshape(NA, cols(exog), cols(exog))
+catch matrix B.coeff = mols(endog, exog, &amp;uhat, &amp;vcv)
 B.error = $error
 if B.error
   return B
 endif
 rnameset(B.coeff, B.parnames)
 scalar B.ncoeff = cols(exog)  # &quot;const&quot; may have been dropped
+matrix B.vcv = vcv
+matrix B.uhat = uhat
 matrix B.xmat = parnames_to_matrix(X, B.parnames)
 matrix B.ahat = get_ahat(mybar, mxbar, B)
 matrix B.yhat = B.ahat + B.xmat * B.coeff
-matrix B.uhat = y - B.yhat
 matrix B.rsq = rsq_overall(y, B.yhat)
 scalar B.ess = B.uhat'B.uhat
 scalar B.sigma = sdc(B.uhat, (B.N * (B.T - 1) - B.ncoeff))
 /* TODO: Needs more work to be done
-matrix B.vcv = B.sigma^2 * inv(X'X)     # estimated variance of coeff
-matrix B.stderr = sqrt(diag(B.vcv))
+matrix B.stderr = sqrt(diag(vcv))
 */
 set skip_missing on
 return B
@@ -470,6 +472,7 @@ if B.error
   return B
 endif
 rnameset(B.coeff, cnameget(X))
+scalar B.ncoeff = cols(X)
 matrix B.vcv = vcv
 matrix B.uhat = uhat
 matrix B.xmat = parnames_to_matrix(X, B.parnames)

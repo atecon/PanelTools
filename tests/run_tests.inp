@@ -473,7 +473,7 @@ function void test_number_of_droppped_cols ()
     scalar x = 4
     scalar y = 2
     string actual = ""
-    string expected = sprintf("INFO: Dropped %d columns from feature list.\n", (x - y))
+    string expected = sprintf("INFO: Dropped %d column(s) from feature list.\n", (x - y))
 
     # When
     outfile --buffer=actual
