@@ -175,21 +175,31 @@ return ret
 </code>
 </gretl-function>
 <gretl-function name="pquantile" type="series">
- <params count="2">
+ <params count="3">
   <param name="y" type="series" const="true"/>
   <param name="value" type="scalar" const="true">
 <description>p-th quantile</description>
   </param>
+  <param name="by_time" type="bool" default="0" const="true"/>
  </params>
 <code>/* Compute the p-th quantile for each unit. Missing values are ignored
 for computation of the quantile.
+by_time:
+If TRUE, compute for each period the cross-sectional quantile.
+If FALSE, compute the average quantile across units and time and
+assume ot to be time-invariant.
 return: series, p-th quantile for each cross-sectional unit. */
 errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
 errorif(value &lt;= 0 || value &gt;= 1.0, &quot;Parameter 'value' must be in the range '0 &lt; value &lt; 1'.&quot;)
 set skip_missing off
 scalar N = $nobs / $pd
-matrix m = mshape({y}, $pd, N)
-matrix mat = mshape(NA, N, 1)
+matrix m = mshape({y}, $pd, N)  # Rows: time, cols: units
+if by_time == TRUE
+  m = m'
+  matrix mat = mshape(NA, $pd, 1)
+else
+  matrix mat = mshape(NA, N, 1)
+endif
 if sum(missing(m))
   # Columns may have missing values and quantile() breaks down if
   # a column only consists of NA values.
@@ -205,7 +215,13 @@ else
   matrix mat = quantile(m, value)
 endif
 set skip_missing on
-series ret = pexpand(vec(mat))
+if by_time == TRUE
+  matrix r = ones(N, $pd) .* mat  # rows: time, cols: units
+  r = vec(r)
+  series ret = r
+else
+  series ret = pexpand(vec(mat))  # mat is 1 by N
+endif
 string desc = get_description(&quot;pquantile&quot;, argname(y), value)
 setinfo ret --description=&quot;@desc&quot;
 return ret
@@ -352,7 +368,7 @@ scalar n_quantiles = nelem(self.quantiles)
 list L = null
 loop i=1..n_quantiles
   scalar q_value = self.quantiles[i]
-  series pq = pquantile(y, q_value)
+  series pq = pquantile(y, q_value, TRUE)
   string vname = sprintf(&quot;%s_q%d&quot;, argname(y), (100 * q_value))
   list L += genseries(vname, pxmean(pq))
 endloop
@@ -484,7 +500,8 @@ panplot_quantile(invest)
 # Tweak the plot
 bundle Plot = _(title = &quot;Some title&quot;,
                 key_position = &quot;outside below&quot;,
-                yrange_max = 350\
+                yrange_max = 350,
+                filename = &quot;foo.png&quot;\
                 )
 panplot_quantile(invest, null, Plot)
 </sample-script>

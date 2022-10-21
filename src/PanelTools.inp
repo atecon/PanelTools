@@ -51,9 +51,16 @@ end function
 
 
 function series pquantile (const series y,
-                           const scalar value "p-th quantile")
+                           const scalar value "p-th quantile",
+                           const bool by_time[FALSE])
     /* Compute the p-th quantile for each unit. Missing values are ignored
     for computation of the quantile.
+
+    by_time:
+        If TRUE, compute for each period the cross-sectional quantile.
+        If FALSE, compute the average quantile across units and time and
+        assume ot to be time-invariant.
+
     return: series, p-th quantile for each cross-sectional unit. */
 
     errorif($datatype != 3, "Only for panel dataset.")
@@ -62,8 +69,14 @@ function series pquantile (const series y,
     set skip_missing off
 
     scalar N = $nobs / $pd
-    matrix m = mshape({y}, $pd, N)
-    matrix mat = mshape(NA, N, 1)
+    matrix m = mshape({y}, $pd, N)  # Rows: time, cols: units
+
+    if by_time == TRUE
+        m = m'
+        matrix mat = mshape(NA, $pd, 1)
+    else
+        matrix mat = mshape(NA, N, 1)
+    endif
 
     if sum(missing(m))
         # Columns may have missing values and quantile() breaks down if
@@ -81,9 +94,17 @@ function series pquantile (const series y,
         matrix mat = quantile(m, value)
     endif
 
+
     set skip_missing on
 
-    series ret = pexpand(vec(mat))
+    if by_time == TRUE
+        matrix r = ones(N, $pd) .* mat  # rows: time, cols: units
+        r = vec(r)
+        series ret = r
+    else
+        series ret = pexpand(vec(mat))  # mat is 1 by N
+    endif
+
     string desc = get_description("pquantile", argname(y), value)
     setinfo ret --description="@desc"
 
@@ -321,7 +342,7 @@ function void panplot_quantile (const series y,
 
     loop i=1..n_quantiles
         scalar q_value = self.quantiles[i]
-        series pq = pquantile(y, q_value)
+        series pq = pquantile(y, q_value, TRUE)
         string vname = sprintf("%s_q%d",
                                argname(y),
                                (100 * q_value))

@@ -27,6 +27,7 @@ panplot_quantile(invest)
 # Tweak the plot
 bundle Plot = _(title = "Some title",
                 key_position = "outside below",
-                yrange_max = 350\
+                yrange_max = 350,
+                filename = "foo.png"\
                 )
 panplot_quantile(invest, null, Plot)
