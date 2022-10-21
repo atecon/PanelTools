@@ -20,3 +20,13 @@ print invest invest_* -o --range=1:40
 
 series invest_poly = ppolyfit(invest, 2)
 print invest invest_poly -o --range=1:40
+
+# Plot cross-sectional quantiles over time
+panplot_quantile(invest)
+
+# Tweak the plot
+bundle Plot = _(title = "Some title",
+                key_position = "outside below",
+                yrange_max = 350\
+                )
+panplot_quantile(invest, null, Plot)

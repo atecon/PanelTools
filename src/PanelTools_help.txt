@@ -109,7 +109,36 @@ Returns
 Nothing.
 
 
+
+## panplot_quantile(const series y, const series date[null], bundle self[null])
+Plot quantiles of cross-section dimension over time.
+
+Parameters
+    y        - series, target series
+    date     - series, Date information (optional) if panel-time is not set
+    self     - bundle, Optionally pass parameters for tweaking the plot
+                Supported parameters and default values are:
+                    string filename = "display"  (immediately show on screen)
+                    string key_position = "top left"
+                    string title = ""
+                    string ylabel = ""
+                    string xlabel = ""
+                    scalar yrange_min = NA  (automatically set)
+                    scalar yrange_max = NA  (automatically set)
+                    scalar fontsize = 10
+                    scalar fontsize_tics = 8
+                    string options_string = ""
+                    matrix quantiles = {0.05, 0.5, 0.95}
+                    string options_string = ""
+
+Returns
+Nothing.
+
+
 # Changelog
+v0.3 (10-2022)
+- add new panplot_quantile function
+
 v0.2 (07-2021)
 - add new ppolyfit() function
 

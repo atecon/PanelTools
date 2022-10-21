@@ -2,8 +2,8 @@
 <gretl-functions>
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
-<version>0.2</version>
-<date>2021-07-22</date>
+<version>0.3</version>
+<date>2022-10-22</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -118,7 +118,36 @@ Returns
 Nothing.
 
 
+
+## panplot_quantile(const series y, const series date[null], bundle self[null])
+Plot quantiles of cross-section dimension over time.
+
+Parameters
+    y        - series, target series
+    date     - series, Date information (optional) if panel-time is not set
+    self     - bundle, Optionally pass parameters for tweaking the plot
+                Supported parameters and default values are:
+                    string filename = &quot;display&quot;  (immediately show on screen)
+                    string key_position = &quot;top left&quot;
+                    string title = &quot;&quot;
+                    string ylabel = &quot;&quot;
+                    string xlabel = &quot;&quot;
+                    scalar yrange_min = NA  (automatically set)
+                    scalar yrange_max = NA  (automatically set)
+                    scalar fontsize = 10
+                    scalar fontsize_tics = 8
+                    string options_string = &quot;&quot;
+                    matrix quantiles = {0.05, 0.5, 0.95}
+                    string options_string = &quot;&quot;
+
+Returns
+Nothing.
+
+
 # Changelog
+v0.3 (10-2022)
+- add new panplot_quantile function
+
 v0.2 (07-2021)
 - add new ppolyfit() function
 
@@ -305,6 +334,50 @@ set skip_missing on
 return ret
 </code>
 </gretl-function>
+<gretl-function name="panplot_quantile" type="void">
+ <params count="3">
+  <param name="y" type="series" const="true"/>
+  <param name="date" type="series" optional="true" const="true"/>
+  <param name="self" type="bundle" optional="true"/>
+ </params>
+<code>/* Plot quantiles of cross-section dimension over time. */
+errorif(!$datatype == 3, &quot;You need a panel dataset.&quot;)
+if !exists(self)
+  bundle self = panplot_defaults(y)
+else
+  self = self + panplot_defaults(y)
+endif
+self.quantiles = vec(self.quantiles)
+scalar n_quantiles = nelem(self.quantiles)
+list L = null
+loop i=1..n_quantiles
+  scalar q_value = self.quantiles[i]
+  series pq = pquantile(y, q_value)
+  string vname = sprintf(&quot;%s_q%d&quot;, argname(y), (100 * q_value))
+  list L += genseries(vname, pxmean(pq))
+endloop
+string filename = self.filename
+string options_string = self.options_string
+string options_cmd = sprintf(&quot;options with-lines single-yaxis %s &quot;, options_string)
+if exists(date)
+  list L += date
+else
+  options_cmd += &quot;time-series&quot;
+endif
+string yrange_cmd = yrange_string(self)
+plot L
+  @options_cmd
+  printf &quot;set key %s font ',%d'&quot;, self.key_position, self.fontsize
+  literal set grid
+  printf &quot;set title \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.title, self.fontsize
+  printf &quot;set ylabel \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.ylabel, self.fontsize
+  printf &quot;set xlabel \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.xlabel, self.fontsize
+  printf &quot;set xtics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
+  printf &quot;set ytics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
+  printf &quot;%s&quot;, yrange_cmd
+end plot --output=&quot;@filename&quot;
+</code>
+</gretl-function>
 <gretl-function name="helper_pfirst_plast" type="series" private="1">
  <params count="2">
   <param name="y" type="series" const="true"/>
@@ -340,6 +413,47 @@ bundle B = _( ppolyfit = sprintf(&quot;polynomial fit of %s (order=%d)&quot;, yn
 return B[&quot;@fname&quot;]
 </code>
 </gretl-function>
+<gretl-function name="panplot_defaults" type="bundle" private="1">
+ <params count="1">
+  <param name="y" type="series" const="true"/>
+ </params>
+<code>/* Add default parameter values to bundle. */
+bundle self
+string self.filename = &quot;display&quot;
+string self.key_position = &quot;top left&quot;
+string self.title = &quot;&quot;
+string self.ylabel = &quot;&quot;
+string self.xlabel = &quot;&quot;
+scalar miny = min(y)
+scalar self.yrange_min = NA # miny &gt;= 0 ? (miny * 0.95) : -(abs(miny) * 0.95)
+scalar self.yrange_max = NA # max(y) * 1.05
+scalar self.fontsize = 10
+scalar self.fontsize_tics = 8
+scalar self.linewidth = 1.5
+string self.options_string = &quot;&quot;
+matrix self.quantiles = {0.05, 0.5, 0.95}
+string self.options_string = &quot;&quot;
+return self
+</code>
+</gretl-function>
+<gretl-function name="yrange_string" type="string" private="1">
+ <params count="1">
+  <param name="self" type="bundle" const="true"/>
+ </params>
+<code>/* Compile the command for setting the yrange
+return: string, gnuplot command */
+string s = &quot;set yrange[&quot;
+if ok(self.yrange_min)
+  s += sprintf(&quot;%g&quot;, self.yrange_min)
+endif
+s += &quot;:&quot;
+if ok(self.yrange_max)
+  s += sprintf(&quot;%g&quot;, self.yrange_max)
+endif
+s += &quot;]&quot;
+return s
+</code>
+</gretl-function>
 <sample-script>
 clear
 set verbose off
@@ -363,6 +477,16 @@ print invest invest_* -o --range=1:40
 
 series invest_poly = ppolyfit(invest, 2)
 print invest invest_poly -o --range=1:40
+
+# Plot cross-sectional quantiles over time
+panplot_quantile(invest)
+
+# Tweak the plot
+bundle Plot = _(title = &quot;Some title&quot;,
+                key_position = &quot;outside below&quot;,
+                yrange_max = 350\
+                )
+panplot_quantile(invest, null, Plot)
 </sample-script>
 </gretl-function-package>
 </gretl-functions>
