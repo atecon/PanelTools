@@ -1,11 +1,11 @@
 author = Artur Tarassow
 email = atecon@posteo.de
 version = 0.3
-date = 2022-10-22
+date = 2022-10-24
 description = Collection of tools for handling panel data
 tags = C10
 min-version = 2021a
-public = pcum pquantile pxfraction pfirst plast pmode pxmean panelinfo ppolyfit panplot_quantile
+public = pcum pquantile pxquantile pxfraction pfirst plast pmode pxmean panelinfo ppolyfit panplot_quantile
 help = PanelTools_help.txt
 sample-script = PanelTools_sample.inp
 depends = extra

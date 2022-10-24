@@ -98,6 +98,57 @@ end function
 test_pquantile(Params)
 
 
+
+
+
+
+nulldata 12 --preserve
+setobs 3 1:1 --stacked-time-series
+series y_with_nan = {1; 2; 3;\
+                     3; NA; 1;\
+                     NA; 2; 1;\
+                     NA; NA; NA\
+                    }
+series y =          {1; 2; 3;\
+                     3; 2; 1;\
+                     5; 2; 1;\
+                     1; 1; 1\
+                    }
+
+series expected_with_nan = {2; 2; 1;\
+                            2; 2; 1;\
+                            2; 2; 1;\
+                            2; 2; 1\
+                           }
+series expected =           {2; 2; 1;\
+                             2; 2; 1;\
+                             2; 2; 1;\
+                             2; 2; 1\
+                           }
+
+bundles Params = null
+Params = Params + _(y = y, value = 0.5, expected = expected)
+Params = Params + _(y = y_with_nan, value = 0.5, expected = expected_with_nan)
+
+function void test_pxquantile (const bundles P)
+    print "Start testing function pxquantile()."
+
+    loop foreach i P
+        # Given + When
+        series expected = P[i].expected
+        series actual = pxquantile(P[i].y, P[i].value)
+        print actual expected -o
+
+        # Then
+        assert(equal_vectors({actual}, {expected}) == TRUE)
+    endloop
+end function
+test_pxquantile(Params)
+
+
+
+
+
 nulldata 12 --preserve
 setobs 4 1:1 --stacked-time-series
 series y = {1; 2; 3; NA;\
@@ -294,7 +345,10 @@ end function
 test_ppolyfit(Params)
 
 
-
+open grunfeld --quiet
+panplot_quantile(invest, FALSE, _(filename = "pquantile.png"))
+panplot_quantile(invest, TRUE, _(quantiles = {0.15, 0.5, 0.81},
+                                 filename = "pxquantile.png"))
 
 
 

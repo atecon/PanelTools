@@ -58,8 +58,21 @@ Parameters
 
 Returns
 Series with the p-th quantile for each cross-sectional unit. NA values are
-ignored. If all values are NA for a unit, a series consisting only NA values is
-returned for that unit.
+ignored. If all values are NA for a unit, a series consisting only NA values
+is returned for that unit.
+
+
+## pxquantile(const series y, const scalar value "p-th quantile")
+Compute the p-th quantile for each time period across all units.
+
+Parameters
+    y     - series, target series
+    value - scalar, p-th quantile; must be in the range 0 < value < 1
+
+Returns
+Series with the p-th quantile for each time period across-sectional units.
+NA values are ignored. If all values are NA for a unit, a series consisting
+only NA values is returned for that unit.
 
 
 ## pxmean(const series y)
@@ -110,13 +123,18 @@ Nothing.
 
 
 
-## panplot_quantile(const series y, const series date[null], bundle self[null])
-Plot quantiles of cross-section dimension over time.
+## panplot_quantile(const series y,
+                    const bool do_pxquantile[FALSE],
+                    bundle self[null])
+Plot quantiles over time.
 
 Parameters
-    y        - series, target series
-    date     - series, Date information (optional) if panel-time is not set
-    self     - bundle, Optionally pass parameters for tweaking the plot
+    y               - series, target series
+    do_pxquantile   - bool, If FALSE (default) compute the quantiles
+                      across all observations. If TRUE compute the
+                      quantiles for each time period across all units.
+    self            - bundle, Optionally pass parameters for
+                      tweaking the plot
                 Supported parameters and default values are:
                     string filename = "display"  (immediately show on screen)
                     string key_position = "top left"
@@ -129,7 +147,6 @@ Parameters
                     scalar fontsize_tics = 8
                     string options_string = ""
                     matrix quantiles = {0.05, 0.5, 0.95}
-                    string options_string = ""
 
 Returns
 Nothing.

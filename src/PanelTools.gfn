@@ -3,7 +3,7 @@
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>0.3</version>
-<date>2022-10-22</date>
+<date>2022-10-24</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -67,8 +67,21 @@ Parameters
 
 Returns
 Series with the p-th quantile for each cross-sectional unit. NA values are
-ignored. If all values are NA for a unit, a series consisting only NA values is
-returned for that unit.
+ignored. If all values are NA for a unit, a series consisting only NA values
+is returned for that unit.
+
+
+## pxquantile(const series y, const scalar value &quot;p-th quantile&quot;)
+Compute the p-th quantile for each time period across all units.
+
+Parameters
+    y     - series, target series
+    value - scalar, p-th quantile; must be in the range 0 &lt; value &lt; 1
+
+Returns
+Series with the p-th quantile for each time period across-sectional units.
+NA values are ignored. If all values are NA for a unit, a series consisting
+only NA values is returned for that unit.
 
 
 ## pxmean(const series y)
@@ -119,13 +132,18 @@ Nothing.
 
 
 
-## panplot_quantile(const series y, const series date[null], bundle self[null])
-Plot quantiles of cross-section dimension over time.
+## panplot_quantile(const series y,
+                    const bool do_pxquantile[FALSE],
+                    bundle self[null])
+Plot quantiles over time.
 
 Parameters
-    y        - series, target series
-    date     - series, Date information (optional) if panel-time is not set
-    self     - bundle, Optionally pass parameters for tweaking the plot
+    y               - series, target series
+    do_pxquantile   - bool, If FALSE (default) compute the quantiles
+                      across all observations. If TRUE compute the
+                      quantiles for each time period across all units.
+    self            - bundle, Optionally pass parameters for
+                      tweaking the plot
                 Supported parameters and default values are:
                     string filename = &quot;display&quot;  (immediately show on screen)
                     string key_position = &quot;top left&quot;
@@ -138,7 +156,6 @@ Parameters
                     scalar fontsize_tics = 8
                     string options_string = &quot;&quot;
                     matrix quantiles = {0.05, 0.5, 0.95}
-                    string options_string = &quot;&quot;
 
 Returns
 Nothing.
@@ -175,37 +192,28 @@ return ret
 </code>
 </gretl-function>
 <gretl-function name="pquantile" type="series">
- <params count="3">
+ <params count="2">
   <param name="y" type="series" const="true"/>
   <param name="value" type="scalar" const="true">
 <description>p-th quantile</description>
   </param>
-  <param name="by_time" type="bool" default="0" const="true"/>
  </params>
-<code>/* Compute the p-th quantile for each unit. Missing values are ignored
-for computation of the quantile.
-by_time:
-If TRUE, compute for each period the cross-sectional quantile.
-If FALSE, compute the average quantile across units and time and
-assume ot to be time-invariant.
+<code>/* Compute the p-th quantile for each unit. Missing values are
+ignored for computation of the quantile.
 return: series, p-th quantile for each cross-sectional unit. */
 errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
 errorif(value &lt;= 0 || value &gt;= 1.0, &quot;Parameter 'value' must be in the range '0 &lt; value &lt; 1'.&quot;)
 set skip_missing off
 scalar N = $nobs / $pd
 matrix m = mshape({y}, $pd, N)  # Rows: time, cols: units
-if by_time == TRUE
-  m = m'
-  matrix mat = mshape(NA, $pd, 1)
-else
-  matrix mat = mshape(NA, N, 1)
-endif
+matrix mat = mshape(NA, N, 1)
 if sum(missing(m))
-  # Columns may have missing values and quantile() breaks down if
-  # a column only consists of NA values.
+  /* Columns may have missing values and quantile() breaks down if
+  a column only consists of NA values. */
   loop i=1..N
-    matrix mask = ok(m[,i])
-    matrix vals = selifr(m[,i], mask)
+    matrix mtmp = m[,i]
+    matrix mask = ok(mtmp)
+    matrix vals = selifr(mtmp, mask)
     if nelem(vals)
       mat[i] = quantile(vals, value) # scalar value
     endif
@@ -215,14 +223,50 @@ else
   matrix mat = quantile(m, value)
 endif
 set skip_missing on
-if by_time == TRUE
-  matrix r = ones(N, $pd) .* mat  # rows: time, cols: units
-  r = vec(r)
-  series ret = r
-else
-  series ret = pexpand(vec(mat))  # mat is 1 by N
-endif
+series ret = pexpand(vec(mat))  # mat is 1 by N
 string desc = get_description(&quot;pquantile&quot;, argname(y), value)
+setinfo ret --description=&quot;@desc&quot;
+return ret
+</code>
+</gretl-function>
+<gretl-function name="pxquantile" type="series">
+ <params count="2">
+  <param name="y" type="series" const="true"/>
+  <param name="value" type="scalar" const="true">
+<description>p-th quantile</description>
+  </param>
+ </params>
+<code>/* Compute the p-th quantile for each period using the
+cross-sectional dimension. Missing values are ignored for
+computation of the quantile.
+return: series, p-th quantile for each time period across the cross-sectional dimension. */
+errorif($datatype != 3, &quot;Only for panel dataset.&quot;)
+errorif(value &lt;= 0 || value &gt;= 1.0, &quot;Parameter 'value' must be in the range '0 &lt; value &lt; 1'.&quot;)
+set skip_missing off
+scalar N = $nobs / $pd
+matrix mat = mshape(NA, $pd, 1)
+matrix m = mshape({y}, $pd, N)  # Rows: time, cols: units
+m = m'  # Rows: units, cols: time
+if sum(missing(m))
+  /* Columns may have missing values and quantile() breaks down if
+  a column only consists of NA values. */
+  loop i=1..$pd
+    matrix mtmp = m[,i]
+    matrix mask = ok(mtmp)
+    matrix vals = selifr(mtmp, mask)
+    if nelem(vals)
+      mat[i] = quantile(vals, value) # scalar value
+    endif
+  endloop
+else
+  # faster version for matrices without missing values
+  matrix mat[1:] = quantile(m, value)'
+endif
+set skip_missing on
+matrix r = ones($pd, N) .* mat
+r = vec(r)
+series ret = r
+string desc = get_description(&quot;pxquantile&quot;, argname(y), value)
 setinfo ret --description=&quot;@desc&quot;
 return ret
 </code>
@@ -353,7 +397,7 @@ return ret
 <gretl-function name="panplot_quantile" type="void">
  <params count="3">
   <param name="y" type="series" const="true"/>
-  <param name="date" type="series" optional="true" const="true"/>
+  <param name="do_pxquantile" type="bool" default="0" const="true"/>
   <param name="self" type="bundle" optional="true"/>
  </params>
 <code>/* Plot quantiles of cross-section dimension over time. */
@@ -361,37 +405,43 @@ errorif(!$datatype == 3, &quot;You need a panel dataset.&quot;)
 if !exists(self)
   bundle self = panplot_defaults(y)
 else
-  self = self + panplot_defaults(y)
+  bundle self = self + panplot_defaults(y)
 endif
 self.quantiles = vec(self.quantiles)
 scalar n_quantiles = nelem(self.quantiles)
+string funcname = do_pxquantile == TRUE ? &quot;pxquantile&quot; : &quot;pquantile&quot;
 list L = null
 loop i=1..n_quantiles
   scalar q_value = self.quantiles[i]
-  series pq = pquantile(y, q_value, TRUE)
+  series pq = feval(funcname, y, q_value)
   string vname = sprintf(&quot;%s_q%d&quot;, argname(y), (100 * q_value))
-  list L += genseries(vname, pxmean(pq))
+  genseries(vname, pxmean(pq))
+  if sum(missing(@vname)) == 0
+    L += @vname
+  else
+    printf &quot;WARNING: Missing values for quantile = %g. Ignore.\n&quot;, q_value
+  endif
 endloop
-string filename = self.filename
-string options_string = self.options_string
-string options_cmd = sprintf(&quot;options with-lines single-yaxis %s &quot;, options_string)
-if exists(date)
-  list L += date
+if nelem(L) == 0
+  print &quot;WARNING: Nothing to plot due to missing values.&quot;
 else
-  options_cmd += &quot;time-series&quot;
+  string filename = self.filename
+  # string options_string = self.options_string # not used, yet
+  string options_cmd = &quot;options with-lines single-yaxis time-series&quot;
+  string yrange_cmd = yrange_string(self)
+  plot L
+    @options_cmd
+    printf &quot;set key %s font ',%d'&quot;, self.key_position, self.fontsize
+    literal set grid
+    printf &quot;%s&quot;, get_line_options(self)
+    printf &quot;set title \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.title, self.fontsize
+    printf &quot;set ylabel \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.ylabel, self.fontsize
+    printf &quot;set xlabel \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.xlabel, self.fontsize
+    printf &quot;set xtics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
+    printf &quot;set ytics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
+    printf &quot;%s&quot;, yrange_cmd
+  end plot --output=&quot;@filename&quot;
 endif
-string yrange_cmd = yrange_string(self)
-plot L
-  @options_cmd
-  printf &quot;set key %s font ',%d'&quot;, self.key_position, self.fontsize
-  literal set grid
-  printf &quot;set title \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.title, self.fontsize
-  printf &quot;set ylabel \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.ylabel, self.fontsize
-  printf &quot;set xlabel \&quot;%s\&quot; font \&quot;, %d\&quot;&quot;, self.xlabel, self.fontsize
-  printf &quot;set xtics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
-  printf &quot;set ytics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
-  printf &quot;%s&quot;, yrange_cmd
-end plot --output=&quot;@filename&quot;
 </code>
 </gretl-function>
 <gretl-function name="helper_pfirst_plast" type="series" private="1">
@@ -425,7 +475,7 @@ return pexpand(ret)
 <code>/* Retrieve series' description.
 return: string */
 scalar value = !exists(value) ? 1 : value
-bundle B = _( ppolyfit = sprintf(&quot;polynomial fit of %s (order=%d)&quot;, yname, value), pcum = sprintf(&quot;cumuluated values of %s&quot;, yname), pquantile = sprintf(&quot;quantile (q=%g) values of %s&quot;, value, yname), pxfraction = sprintf(&quot;cross-sectional fractions of %s (value=%g)&quot;, yname, value), pfirst = sprintf(&quot;first valid values of %s&quot;, yname), plast = sprintf(&quot;last valid values of %s&quot;, yname), pmode = sprintf(&quot;modes of %s&quot;, yname), pxmean = sprintf(&quot;cross-sectional means of %s&quot;, yname) )
+bundle B = _( ppolyfit = sprintf(&quot;polynomial fit of %s (order=%d)&quot;, yname, value), pcum = sprintf(&quot;cumuluated values of %s&quot;, yname), pquantile = sprintf(&quot;quantile (q=%g) values of %s&quot;, value, yname), pxquantile = sprintf(&quot;quantile (q=%g) values of %s over time&quot;, value, yname), pxfraction = sprintf(&quot;cross-sectional fractions of %s (value=%g)&quot;, yname, value), pfirst = sprintf(&quot;first valid values of %s&quot;, yname), plast = sprintf(&quot;last valid values of %s&quot;, yname), pmode = sprintf(&quot;modes of %s&quot;, yname), pxmean = sprintf(&quot;cross-sectional means of %s&quot;, yname) )
 return B[&quot;@fname&quot;]
 </code>
 </gretl-function>
@@ -448,7 +498,6 @@ scalar self.fontsize_tics = 8
 scalar self.linewidth = 1.5
 string self.options_string = &quot;&quot;
 matrix self.quantiles = {0.05, 0.5, 0.95}
-string self.options_string = &quot;&quot;
 return self
 </code>
 </gretl-function>
@@ -470,9 +519,23 @@ s += &quot;]&quot;
 return s
 </code>
 </gretl-function>
+<gretl-function name="get_line_options" type="string" private="1">
+ <params count="1">
+  <param name="self" type="bundle" const="true"/>
+ </params>
+<code>/* Compile the gnuplot command string for tweaking lines.
+return: string */
+string ret = &quot;&quot;
+loop i=1..nelem(self.quantiles)
+  ret += sprintf(&quot;set linetype %d lw %g\n&quot;, $i, self.linewidth)
+endloop
+return ret
+</code>
+</gretl-function>
 <sample-script>
 clear
 set verbose off
+set datacols 8
 include PanelTools.gfn
 
 open grunfeld.gdt --quiet
@@ -484,26 +547,28 @@ series invest_plast = plast(invest)
 series invest_pcum = pcum(invest)
 series invest_pmode = pmode(invest)
 series invest_pquantile = pquantile(invest, 0.5)
+series invest_pxquantile = pxquantile(invest, 0.5)
 
 series invest_pxmean = pxmean(invest)
 series invest_pxfraction = pxfraction(invest, min(invest), FALSE)
 series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
 
-print invest invest_* -o --range=1:40
+
+print invest invest_* -o
 
 series invest_poly = ppolyfit(invest, 2)
-print invest invest_poly -o --range=1:40
+print invest invest_poly -o
 
 # Plot cross-sectional quantiles over time
 panplot_quantile(invest)
 
 # Tweak the plot
-bundle Plot = _(title = &quot;Some title&quot;,
+bundle Plot = _(title = &quot;Cross-sectional quantiles over time&quot;,
                 key_position = &quot;outside below&quot;,
-                yrange_max = 350,
-                filename = &quot;foo.png&quot;\
+                yrange_max = 450,
+                quantiles = {0.15, 0.5, 0.88}\
                 )
-panplot_quantile(invest, null, Plot)
+panplot_quantile(invest, TRUE, Plot)
 </sample-script>
 </gretl-function-package>
 </gretl-functions>
