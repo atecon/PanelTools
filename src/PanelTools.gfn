@@ -154,7 +154,7 @@ Parameters
                     scalar yrange_max = NA  (automatically set)
                     scalar fontsize = 10
                     scalar fontsize_tics = 8
-                    string options_string = &quot;&quot;
+                    string options_string = &quot;&quot; (e.g. 'ylogscale')
                     matrix quantiles = {0.05, 0.5, 0.95}
 
 Returns
@@ -426,8 +426,8 @@ if nelem(L) == 0
   print &quot;WARNING: Nothing to plot due to missing values.&quot;
 else
   string filename = self.filename
-  # string options_string = self.options_string # not used, yet
-  string options_cmd = &quot;options with-lines single-yaxis time-series&quot;
+  string options_cmd = &quot;options with-lines single-yaxis time-series &quot;
+  options_cmd += self.options_string
   string yrange_cmd = yrange_string(self)
   plot L
     @options_cmd

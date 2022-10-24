@@ -394,9 +394,8 @@ function void panplot_quantile (const series y,
         print "WARNING: Nothing to plot due to missing values."
     else
         string filename = self.filename
-        # string options_string = self.options_string # not used, yet
-
-        string options_cmd = "options with-lines single-yaxis time-series"
+        string options_cmd = "options with-lines single-yaxis time-series "
+        options_cmd += self.options_string
         string yrange_cmd = yrange_string(self)
 
         plot L
