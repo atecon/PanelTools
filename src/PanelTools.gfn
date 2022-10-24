@@ -163,7 +163,8 @@ Nothing.
 
 # Changelog
 v0.3 (10-2022)
-- add new panplot_quantile function
+- add new pxquantile() function
+- add new panplot_quantile() function
 
 v0.2 (07-2021)
 - add new ppolyfit() function
