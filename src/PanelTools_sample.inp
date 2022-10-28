@@ -34,3 +34,69 @@ bundle Plot = _(title = "Cross-sectional quantiles over time",
                 quantiles = {0.15, 0.5, 0.88}\
                 )
 panplot_quantile(invest, TRUE, Plot)
+print invest invest_poly -o --range=1:40
+
+
+# Compute mean values for each unit based on some matrix
+# Works as gretl's pmean() for series
+matrix input = {1; 3; -5; -10}
+scalar N = 2
+eval mpmean(input, N)
+
+# Compute mean values of columns ignoring NAs
+matrix input = {1; 3; NA} ~ {-5; -10; 0}
+eval meanc_robust(input)
+
+# Compute standard deviation of columns ignoring NAs
+matrix input = {1; 3; NA} ~ {-5; -10; 0}
+eval sdc_robust(input)
+
+
+# Pooled OLS using matrices
+open grunfeld.gdt -p -q
+genr unit
+genr time
+smpl unit <= 2 --restrict --permanent
+scalar n_units = $nobs/$pd
+
+panel invest const kstock value --pooled # gretl using series
+
+matrix y = {invest}
+list xlist = const kstock value
+matrix X = {xlist}
+
+bundle model = pols_estimator(y, X, n_units)  # actual estimation
+print model.coeff       # point estimates
+print model.rsq         # R^2
+
+
+# FE model using matrices
+scalar horizon = 3
+series trainset = (time <= (max(time) - horizon))
+smpl trainset == TRUE --restrict  # training set for estimating the model
+
+matrix ytrain = {invest}
+list xlist = const kstock value
+matrix Xtrain = {xlist}
+
+panel invest const kstock value --fixed-effects # gretl using series
+
+bundle model = fe_estimator(ytrain, Xtrain, n_units)  # actual estimation
+print model
+print model.coeff       # point estimates
+print model.ahat        # fixed-effects
+
+
+# Prediction using the test set
+smpl trainset == FALSE --restrict --replace
+
+matrix ytest = {invest}
+matrix Xtest = {xlist}
+matrix predictions = pfcast(Xtest, model, TRUE)
+
+matrix y_and_pred = ytest ~ predictions
+cnameset(y_and_pred, "actuals predictions")
+print y_and_pred
+
+# Evaluate predictions
+eval fcstats(ytest, predictions)

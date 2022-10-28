@@ -99,9 +99,6 @@ test_pquantile(Params)
 
 
 
-
-
-
 nulldata 12 --preserve
 setobs 3 1:1 --stacked-time-series
 series y_with_nan = {1; 2; 3;\
@@ -144,8 +141,6 @@ function void test_pxquantile (const bundles P)
     endloop
 end function
 test_pxquantile(Params)
-
-
 
 
 
@@ -354,9 +349,355 @@ panplot_quantile(invest, TRUE, _(quantiles = {0.15, 0.5, 0.81},
 
 
 
+bundles Params = null
+Params = Params + _(N = 2, input = {1; 3; -5; -10},\
+                    expected = {2; 2; -7.5; -7.5})
+Params = Params + _(N = 2, input = {1; NA; -5; -10},\
+                    expected = {1; 1; -7.5; -7.5})
+Params = Params + _(N = 2, input = {NA; NA; -5; -10},\
+                    expected = {NA; NA; -7.5; -7.5})
+
+function void test_mpmean (const bundles P)
+    print "Start testing function mpmean()."
+
+    loop foreach i P
+        # Given + When
+        matrix actual = mpmean(P[i].input, P[i].N)
+
+        # Then
+        loop idx=1..rows(actual)
+            assert(ok(actual[idx]) == ok((P[i].expected[idx])))
+            if ok(actual[idx])
+                assert(actual[idx] == P[i].expected[idx])
+            endif
+        endloop
+
+    endloop
+end function
+test_mpmean(Params)
+
+
+bundles Params = null
+
+Params = Params + _(input = {1, 1, 1, 1;\
+                             2, 1, NA, NA;\
+                             3, 1, 1, 2},\
+                    expected = {1, 1;\
+                                2, NA;\
+                                3, 2}\
+                    )
+function void test_drop_constants (const bundles P)
+    print "Start testing function drop_constants()."
+
+    loop foreach i P
+        # When
+        matrix actual = drop_constants(P[i].input)
+
+        # Then
+        loop j=1..cols(actual)
+            loop k=1..rows(actual)
+                if ok(actual[k,j]) && ok(P[i].expected[k,j])
+                    assert(actual[k,j] == P[i].expected[k,j])
+                endif
+            endloop
+        endloop
+    endloop
+end function
+test_drop_constants(Params)
+
+
+
+bundles Params = null
+Params = Params + _(N = 2, T = 3, coeff = {0; 1},\
+                    ybar = {1; 1; 1; 2; 2; 2},\
+                    xbar = {0, 2; 0, 2; 0, 2; 2, 4; 2, 4; 2, 4; 2, 4},\
+                    expected = {-1; -1; -1; -2; -2; -2} )
+
+function void test_get_ahat (const bundles P)
+    print "Start testing function get_ahat()."
+
+    loop foreach i P
+        # When
+        matrix actual = get_ahat(P[i].ybar, P[i].xbar, P[i])
+
+        # Then
+        loop idx=1..rows(actual)
+            assert(ok(actual[idx]) == ok((P[i].expected[idx])))
+            if ok(actual[idx])
+                assert(actual[idx] == P[i].expected[idx])
+            endif
+        endloop
+
+    endloop
+end function
+test_get_ahat(Params)
+
+
+
+open grunfeld.gdt -p -q
+genr unit
+smpl unit <= 2 --restrict --permanent
+panel invest const kstock value --fixed-effects --quiet
+bundle Model = $model
+Model.ahat = vec(mshape({$ahat}, $pd, $nobs/$pd)[,1])
+
+function void test_fe_estimator (const list L, const bundle Model)
+    print "Start testing function fe_estimator()"
+
+    # Given
+    matrix y = {L.invest}
+    list Z = const L.kstock L.value
+    matrix X = {Z}
+    Z_wo_const = Z - const
+    strings expected_parnames = varnames(Z_wo_const)
+
+    # When
+    bundle actual = fe_estimator(y, X, $nobs/$pd)
+
+    # Then
+    loop i=2..rows(Model.coeff)
+        assert_almost_equal_num(Model.coeff[i], actual.coeff[i-1], 10e-5)
+    endloop
+    loop i=1..rows(Model.ahat)
+        assert_almost_equal_num(Model.ahat[i], actual.ahat[i], 10e-5)
+    endloop
+
+    loop foreach i expected_parnames
+        assert(actual.parnames[i] == "$i")
+    endloop
+end function
+test_fe_estimator(dataset, Model)
+
+
+
+open grunfeld.gdt -p -q
+genr unit
+smpl unit <= 2 --restrict --permanent
+panel invest const kstock value --pooled #--quiet
+bundle Model = $model
+
+function void test_pols_estimator (const list L, const bundle Model)
+    print "Start testing function pols_estimator()"
+
+    # Given
+    matrix y = {L.invest}
+    list Z = const L.kstock L.value
+    matrix X = {Z}
+    strings expected_parnames = varnames(Z)
+
+    # When
+    bundle actual = pols_estimator(y, X, $nobs/$pd)
+
+    # Then
+    loop i=1..rows(Model.coeff)
+        assert_almost_equal_num(Model.coeff[i], actual.coeff[i], 10e-5)
+    endloop
+
+    loop foreach i expected_parnames
+        assert(actual.parnames[i] == "$i")
+    endloop
+end function
+test_pols_estimator(dataset, Model)
+
+
+bundles Params = null
+Params = Params + _(y = {1, 2, 3, 4}', x = {1, 2, 3, 4}',\
+                    expected = 1)
+Params = Params + _(y = {1, 2, 3, 4}', x = {-1, -2, -3, -4}',\
+                    expected = 1)
+Params = Params + _(y = {1, 2, 3, 4}', x = {0, 0, 0, 0}',\
+                    expected = 0)
+function void test_rsq_overall (const bundles P)
+    print "Start testing rsq_overall()"
+
+    loop foreach i P
+        # Given + When
+        scalar actual = rsq_overall(P[i].y, P[i].x)
+
+        # Then
+        assert(actual == P[i].expected)
+    endloop
+end function
+test_rsq_overall(Params)
+
+
+function void test_number_of_dropped_cols ()
+    print "Start testing print_number_of_dropped_cols()"
+
+    # Given
+    scalar x = 4
+    scalar y = 2
+    string actual = ""
+    string expected = \
+        sprintf("INFO: Dropped %d column(s) from feature list.\n", (x - y))
+
+    # When
+    outfile --buffer=actual
+        print_number_of_dropped_cols(x, y)
+    end outfile
+
+    # Then
+    assert(actual == expected)
+end function
+test_number_of_dropped_cols()
+
+
+bundles Params = null
+Params = Params + _(S = defarray("A", "B", "C"), mask = {1, 1, 1},\
+                    expected = defarray("A", "B", "C"))
+Params = Params + _(S = defarray("A", "B", "C"), mask = {0, 0, 0},\
+                    expected = array(0))
+Params = Params + _(S = defarray("D"), mask = {1, 1, 1},\
+                    expected = array(0))
+function void test_mask_string_array (const bundles P)
+    print "Start testing mask_string_array()"
+
+    loop foreach i P
+        # Given + When
+        strings actual = mask_string_array(P[i].S, P[i].mask)
+
+        # Then
+        if nelem(P[i].expected)
+            loop foreach j P[i].expected
+                assert(actual[j] == P[i].expected[j])
+            endloop
+        endif
+    endloop
+end function
+test_mask_string_array(Params)
+
+
+bundles Params = null
+Params = Params + _(m = mnormal(3,2),\
+                    cnames = defarray("A", "B"),\
+                    S = defarray("A", "B", "C"),\
+                    expected = defarray("A", "B")\
+                    )
+Params = Params + _(m = mnormal(3,2),\
+                    cnames = defarray("A", "B"),\
+                    S = defarray("C"),\
+                    expected = array(0)\
+                    )
+
+function void test_parnames_to_matrix (const bundles P)
+    print "Start testing parnames_to_matrix()"
+
+    loop foreach i P
+        # Given
+        matrix m = P[i].m
+        cnameset(m, P[i].cnames)
+
+        # When
+        matrix mout = parnames_to_matrix(m, P[i].S)
+        strings actual = cnameget(mout)
+
+        # Then
+        if nelem(P[i].expected)
+            loop foreach j P[i].expected
+                assert(actual[j] == P[i].expected[j])
+            endloop
+        endif
+    endloop
+end function
+test_parnames_to_matrix(Params)
+
+
+function void test_model_bundle_basics (void)
+    print "Start testing function model_bundle_basics()"
+
+    # Given
+    matrix y = {1, 2, 3, 4, 5, 6}'
+    matrix X = mnormal(6, 2)
+    scalar N = 2
+    string NAME_Y = "endog"
+    strings NAMES_X = defarray("exog1", "exog 2")
+    cnameset(y, NAME_Y)
+    cnameset(X, NAMES_X)
+
+    # When
+    bundle expected = _(N = N,\
+                        T = rows(y) / N,\
+                        depvar = NAME_Y,\
+                        parnames = NAMES_X,\
+                        error = FALSE)
+
+    bundle actual = model_bundle_basics(y, X, N)
+
+    # Then
+    loop foreach i expected
+        if typestr(typeof(actual["$i"])) == "array"
+            continue
+        else
+            assert(actual["$i"] == expected["$i"])
+        endif
+    endloop
+end function
+test_model_bundle_basics()
+
+
+
+# ===============
+## NOT TESTED YET
+# ===============
+function void test_pfcast (void)
+    print "Start testing function pfcast()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_pfcast()
+
+
+function void test_meanc_robust (void)
+    print "Start testing function meanc_robust()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_meanc_robust()
+
+
+function void test_sdc_robust (void)
+    print "Start testing function sdc_robust()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_sdc_robust()
+
+
+function void test_get_description (void)
+    print "Start testing function get_description()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_get_description()
+
+
+function void test_helper_pfirst_plast (void)
+    print "Start testing function helper_pfirst_plast()"
+
+    # Given
+
+    # When
+
+    # Then
+end function
+test_helper_pfirst_plast()
+
 
 print "Finished all tests succesfully."
-quit
-
-
 
