@@ -124,7 +124,6 @@ function series pxfraction (const series y,
 end function
 
 
-
 function series helper_pfirst_plast (const series y, const bool do_plast)
     /* Wrapper for pfirst() and plast()
     return: series, respective values. */
@@ -190,12 +189,12 @@ end function
 
 function void panelinfo (void)
     printf "\nINFO: Information on panel dimensions:\n"
-    printf "Cross-sectional units = %d\n", ($nobs / $pd)
-    printf "Time-dimension %d observations\n\n", $pd
+    printf "Number of cross-sectional units = %d\n", ($nobs / $pd)
+    printf "Number of time-dimension %d observations\n\n", $pd
 end function
 
 
-function series ppolyfit(const series y, const int order[1::])
+function series ppolyfit (const series y, const int order[1::])
     /* Fits a polynomial trend of order "order" to the input series "y" using the method of orthogonal polynomials for each cross-sectional unit separately.
     This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
 
@@ -242,7 +241,7 @@ function string get_description (const string fname,
     scalar value = !exists(value) ? 1 : value
 
     bundle B = _(\
-                 ppolyfit = sprintf("polynomial fit of %s (order=%d)", yname, value),\
+                ppolyfit = sprintf("polynomial fit of %s (order=%d)", yname, value),\
                 pcum = sprintf("cumuluated values of %s", yname),\
                 pquantile = sprintf("quantile (q=%g) values of %s", value, yname),\
                 pxfraction = sprintf("cross-sectional fractions of %s (value=%g)", yname, value),\
@@ -253,4 +252,291 @@ function string get_description (const string fname,
                 )
 
     return B["@fname"]
+end function
+
+
+function matrix meanc_robust (const matrix X)
+    /* Compute mean values for each column even in case of missing values. */
+
+    matrix B = ok(X)
+
+    return sumc(B ? X : 0) ./ sumc(B)
+end function
+
+
+function matrix sdc_robust (const matrix x)
+    /* Compute standard deviation in case of nan values in matrix. */
+
+    matrix m = ok(x)
+    matrix d = x .- meanc_robust(x)
+
+    return sqrt(sumc( (m ? d : 0 ).^2 ) ./ sumc(m))
+end function
+
+
+function matrix mpmean (matrix m, const int N)
+    /* Compute vector of mean values of the column vector "m" for each
+    cross-sectional unit. Missing values are automatically handled.
+    Matrix equivalent to gretl's built-in pmean() function.
+
+    return: matrix, Stacked time-series of means of "m". */
+
+    set skip_missing off
+
+    scalar T = rows(m) / N
+
+    matrix x = mshape(NA, (N * T), cols(m))
+    matrix unity = ones(T, N)
+
+    loop i=1..cols(m)
+        x[,i] = vec( unity .* meanc_robust(mshape(m[,i], T, N)) )
+    endloop
+    set skip_missing on
+
+    return x
+end function
+
+
+### Fixed-effects estimator
+function matrix get_ahat (const matrix mybar "Unit-specific mean of 'y'",
+                          const matrix mxbar "Unit-specific means of 'x' per columns",
+                          const bundle self)
+    /* Compute fixed-effects.
+    return: matrix, Column vector with fixed-effects as stacked time-series. */
+
+    mybar_values = vec(mshape(mybar, self.T, self.N)[1,]) # N by 1
+
+    # Extract vector of unit-specific mean values: N by k
+    matrix x = mshape(NA, self.N, cols(mxbar))
+    loop i=1..cols(mxbar)
+        x[,i] = vec(mshape(mxbar[,i], self.T, self.N)[1,]) # only 1st row as constant
+    endloop
+
+    matrix ahat = mybar_values .- (x * self.coeff)
+
+    return vec(ones(self.T, self.N) .* ahat')
+end function
+
+
+function bundle fe_estimator (const matrix y,
+                              const matrix X,
+                              const int N[1::] "Number of cross-sectional units")
+    /* Fixed-effects estimation using matrices.
+    return: bundle, Model output. */
+
+    set skip_missing off
+
+    matrix mask
+    bundle B = model_bundle_basics(y, X, N)
+    string B.estimator = "fixed_effects"
+
+    matrix mybar = mpmean(y, N)
+    matrix mxbar = mpmean(X, N)
+    matrix endog = y .- mybar
+    matrix exog = X .- mxbar
+
+
+    # Drop eventual intercept
+    scalar nc = cols(exog)
+    matrix exog = drop_constants(exog, &mask)
+    print_number_of_dropped_cols(nc, cols(exog))
+
+    matrix mxbar = selifc(mxbar, mask)
+
+    # As some columns may be dropped, we need to update B.parnames
+    B.parnames = mask_string_array(B.parnames, mask)
+
+    matrix uhat = mshape(NA, rows(endog), 1)
+    matrix vcv = mshape(NA, cols(exog), cols(exog))
+
+    catch matrix B.coeff = mols(endog, exog, &uhat, &vcv)
+    B.error = $error
+    if B.error
+        return B
+    endif
+
+    rnameset(B.coeff, B.parnames)
+    scalar B.ncoeff = cols(exog)  # "const" may have been dropped
+    matrix B.vcv = vcv
+    matrix B.uhat = uhat
+    matrix B.xmat = parnames_to_matrix(X, B.parnames)
+    matrix B.ahat = get_ahat(mybar, mxbar, B)
+    matrix B.yhat = B.ahat + B.xmat * B.coeff
+    matrix B.rsq = rsq_overall(y, B.yhat)
+    scalar B.ess = B.uhat'B.uhat
+    scalar B.sigma = sdc(B.uhat, (B.N * (B.T - 1) - B.ncoeff))
+    /* TODO: Needs more work to be done
+    matrix B.stderr = sqrt(diag(vcv))
+    */
+
+    set skip_missing on
+
+    return B
+end function
+
+
+function scalar rsq_overall (const matrix y, const matrix yhat)
+    /* Compute the overall R^2 statistics as defined in Verbeek's textbook.
+    return: scalar, overall R^2 statistics */
+
+    scalar x = mcorr(y ~ yhat)[1,2]^2
+
+    return ok(x) ? x : 0
+end function
+
+
+function matrix parnames_to_matrix (const matrix x, const strings S)
+    /* Compile a matrix of series based on an array of series names.
+    return: matrix, Including columns as named in 'S'. */
+
+    matrix R
+    strings xnames = cnameget(x)
+    strings Rnames
+
+    loop foreach i S
+        matrix m = instrings(xnames, "$i")
+        if nelem(m)
+            R ~= x[, m[1]]
+            Rnames += "$i"
+        endif
+    endloop
+
+    cnameset(R, Rnames)
+
+    return R
+end function
+
+
+function void print_number_of_dropped_cols (const int before[0::], const int after[0::])
+    ndropped = before - after
+    if ndropped > 0
+        printf "INFO: Dropped %d column(s) from feature list.\n", ndropped
+    endif
+end function
+
+
+function strings mask_string_array (const strings S, matrix mask)
+    /* Select from S only masked entries.
+    return: string array */
+
+    strings ret = array()
+    mask = vec(mask)
+
+    if sum(mask) == 0
+        print "WARNING: Matrix 'mask' has only zeros. Ignore."
+        return ret
+    endif
+    if nelem(mask) == 0 || nelem(S) == 0
+        print "WARNING: Either matrix 'mask' or string array S has no valid entries. Ignore."
+        return ret
+    endif
+    if nelem(mask) != nelem(S)
+        print "ERROR: String array must have the same dimension as vector. Return empty array"
+        return ret
+    endif
+
+    loop i=1..rows(mask)
+        if mask[i] == TRUE
+            ret += S[i]
+        endif
+    endloop
+
+    return ret
+end function
+
+
+function bundle pols_estimator (const matrix y,
+                                const matrix X,
+                                const int N[1::] "Number of cross-sectional units")
+    /* Pooled OLS estimation using matrices without inference.
+    Equivalent to gretl's "panel" command with the option "--pooled".
+    return: bundle, Model output. */
+
+    bundle B = model_bundle_basics(y, X, N)
+    string B.estimator = "ols"
+
+    matrix uhat = mshape(NA, rows(y), 1)
+    matrix vcv = mshape(NA, cols(X), cols(X))
+
+    catch matrix B.coeff = mols(y, X, &uhat, &vcv)
+    B.error = $error
+    if B.error
+        return B
+    endif
+
+    rnameset(B.coeff, cnameget(X))
+    scalar B.ncoeff = cols(X)
+    matrix B.vcv = vcv
+    matrix B.uhat = uhat
+    matrix B.xmat = parnames_to_matrix(X, B.parnames)
+    matrix B.yhat = B.xmat * B.coeff
+    matrix B.rsq = rsq_overall(y, B.yhat)
+    scalar B.ess = B.uhat'B.uhat
+    scalar B.sigma = sdc(B.uhat, (B.NT - B.ncoeff))
+    matrix B.stderr = sqrt(diag(vcv))
+
+    return B
+end function
+
+
+function bundle model_bundle_basics (const matrix y,
+                                     const matrix X,
+                                     const int N[1::] "Number of cross-sectional units")
+    /* Fill model bundle with basic information
+    return: bundle, basic initial information. */
+
+    bundle B
+
+    scalar B.N = N
+    scalar B.T = rows(y) / B.N # consider the case that y is sub-sampled
+    scalar B.NT = B.N * B.T
+    string B.depvar = nelem(cnameget(y)) ? cnameget(y)[1] : ""
+    strings B.parnames = cnameget(X)
+    scalar B.ncoeff = cols(X)
+    scalar B.error = FALSE
+
+    return B
+end function
+
+
+function matrix drop_constants (const matrix m, matrix *mask[null])
+    /* Drop columns which are constant over its entire length.
+    return: matrix, Columns which are not constant over its entire length. */
+
+    matrix mask = (sdc_robust(m) .!= 0)
+    return selifc(m, mask)
+end function
+
+
+function matrix pfcast (matrix xtest "Values of test set",
+                        const bundle Model "Model object",
+                        const bool verbose[FALSE])
+    /* Compute static point forecasts for a given model.
+    return: matrix, Stacked "horizon" by "N" time-series of forecasts. */
+
+    if Model.estimator == "fixed_effects"
+        matrix xtest = drop_constants(xtest)
+    endif
+
+    errorif(rows(Model.coeff) != cols(xtest),\
+            "Number of variables does not match length of coefficient vector.")
+
+    scalar horizon = rows(xtest) / Model.N
+
+    if verbose
+        print "INFO: Compute predictions."
+    endif
+
+    matrix fc = xtest * Model.coeff
+
+    if Model.estimator == "fixed_effects"  # add fixed-effects
+        fc = mshape(fc, horizon, Model.N)
+        fc = fc .+ mshape(Model.ahat, Model.T, Model.N)[1,]  # N by 1
+    endif
+
+    if verbose
+        print "INFO: Finished model estimation."
+    endif
+
+    return vec(fc)
 end function
