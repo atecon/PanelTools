@@ -18,7 +18,6 @@ series invest_pxmean = pxmean(invest)
 series invest_pxfraction = pxfraction(invest, min(invest), FALSE)
 series invest_pxfraction_fraction = pxfraction(invest, min(invest), TRUE)
 
-
 print invest invest_* -o
 
 series invest_poly = ppolyfit(invest, 2)
@@ -52,6 +51,7 @@ matrix input = {1; 3; NA} ~ {-5; -10; 0}
 eval sdc_robust(input)
 
 
+/*  ACTIVATE IF NEEDED
 # Pooled OLS using matrices
 open grunfeld.gdt -p -q
 genr unit
@@ -100,3 +100,4 @@ print y_and_pred
 
 # Evaluate predictions
 eval fcstats(ytest, predictions)
+*/
