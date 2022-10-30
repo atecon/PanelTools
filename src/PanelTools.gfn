@@ -103,7 +103,8 @@ time period. Missing values are completely ignored.
 Parameters
     y        - series, target series
     value    - scalar, Value to search in &quot;y&quot;
-    fraction - bool, if TRUE (=1) compute the fraction of observations taking the
+    fraction - bool, if TRUE (=1) compute the fraction of observations taking
+               the
                value &quot;value&quot;, if FALSE (=0, default) compute the number of
                observations instead.
 
@@ -113,7 +114,10 @@ completely ignored and are not counted.
 
 
 ## ppolyfit(const series y, const int order[1::])
-Fits a polynomial trend of order &quot;order&quot; to the input series &quot;y&quot; using OLS for each cross-sectional unit separately. This function mimics gretl's built-in function polyfit() which works only for time-series data correctly before version 2021c.
+Fits a polynomial trend of order &quot;order&quot; to the input series &quot;y&quot; using OLS for
+each cross-sectional unit separately. This function mimics gretl's built-in
+function polyfit() which works only for time-series data correctly before
+version 2021c.
 
 Parameters
     y        - series, target series
@@ -160,7 +164,8 @@ estimated fixed-effects stored as stacked time-series (key: &quot;ahat&quot;).
 
 
 ## pols_estimator (const matrix y, const matrix X, const int N[1::])
-Matrix-based equivalent of gretl's built-in pooled ols function (see 'help panel').
+Matrix-based equivalent of gretl's built-in pooled ols function (see 'help
+panel').
 
 Parameters
     y        - matrix, Column vector of stacked time-series
@@ -172,7 +177,9 @@ Bundle object comprising point estimates of coefficients (key: &quot;coeff&quot;
 
 
 ## pfcast (const matrix X, const bundle Model, const bool verbose[FALSE])
-Compute static predictions for a given model. For the fixed-effects, the fixed-effects are added. This is the same treatment as gretl does for the panel fixed-effects model when applying the 'fcast' command.
+Compute static predictions for a given model. For the fixed-effects, the
+fixed-effects are added. This is the same treatment as gretl does for the panel
+fixed-effects model when applying the 'fcast' command.
 
 Parameters
     X        - matrix, Matrix of regressors of stacked time-series for test set.
@@ -180,11 +187,14 @@ Parameters
     verbose  - bool, print details (optional, default = FALSE)
 
 Returns
-Matrix of stacked forecasts. &quot;N&quot; stacked time-series of length &quot;horizon&quot;. The parameter &quot;horizon&quot; is internally determined by the input dimension of &quot;X&quot; and the number of cross-sectional units &quot;N&quot; as specified in the &quot;Model&quot; bundle.
+Matrix of stacked forecasts. &quot;N&quot; stacked time-series of length &quot;horizon&quot;. The
+parameter &quot;horizon&quot; is internally determined by the input dimension of &quot;X&quot; and
+the number of cross-sectional units &quot;N&quot; as specified in the &quot;Model&quot; bundle.
 
 
 ## mean_robust (const matrix X)
-Works as gretl's built-in function meanc(). Compute mean values for each column even in case of missing values.
+Works as gretl's built-in function meanc(). Compute mean values for each column
+even in case of missing values.
 
 Parameters
     X        - matrix, Matrix with data and possibly missing values
@@ -193,7 +203,8 @@ Returns
 Row vector with mean values for each column.
 
 ## sdc_robust (const matrix X)
-Works as gretl's built-in function sdc(). Compute standard deviation for each column even in case of missing values.
+Works as gretl's built-in function sdc(). Compute standard deviation for each
+column even in case of missing values.
 
 Parameters
     X        - matrix, Matrix with data and possibly missing values
@@ -232,15 +243,19 @@ Nothing.
 
 
 # Changelog
+===========
 v0.4 (10-2022)
 - add new pxquantile() function
 - add new panplot_quantile() function
 
 v0.3 (03-2022)
 - Add new functions mpmean(), meanc_robust() and sdc_robust()
-- Add new function fe_estimator() for estimating a fixed-effects model using matrices as inputs (no inference supported, yet)
-- Add new function pols_estimator() for estimating a pooled-OLS model using matrices as inputs
-- Add new function pfcast() for computing predictions using some supported panel model using matrices.
+- Add new function fe_estimator() for estimating a fixed-effects model using
+  matrices as inputs (no inference supported, yet)
+- Add new function pols_estimator() for estimating a pooled-OLS model using
+  matrices as inputs
+- Add new function pfcast() for computing predictions using some supported
+  panel model using matrices.
 
 v0.2 (07-2021)
 - Add new ppolyfit() function
@@ -919,7 +934,7 @@ panplot_quantile(invest)
 # Tweak the plot
 bundle Plot = _(title = &quot;Cross-sectional quantiles over time&quot;,
                 key_position = &quot;outside below&quot;,
-                yrange_max = 450,
+                yrange_max = 1250,
                 quantiles = {0.15, 0.5, 0.88}\
                 )
 panplot_quantile(invest, TRUE, Plot)

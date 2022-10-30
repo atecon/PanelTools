@@ -29,7 +29,7 @@ panplot_quantile(invest)
 # Tweak the plot
 bundle Plot = _(title = "Cross-sectional quantiles over time",
                 key_position = "outside below",
-                yrange_max = 450,
+                yrange_max = 1250,
                 quantiles = {0.15, 0.5, 0.88}\
                 )
 panplot_quantile(invest, TRUE, Plot)
