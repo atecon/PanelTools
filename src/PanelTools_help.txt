@@ -95,8 +95,7 @@ Parameters
     y        - series, target series
     value    - scalar, Value to search in "y"
     fraction - bool, if TRUE (=1) compute the fraction of observations taking
-               the
-               value "value", if FALSE (=0, default) compute the number of
+               the value "value", if FALSE (=0, default) compute the number of
                observations instead.
 
 Returns
