@@ -3,7 +3,7 @@
 <gretl-function-package name="PanelTools" needs-panel-data="true" minver="2021a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>0.4</version>
-<date>2022-10-28</date>
+<date>2022-10-30</date>
 <description>Collection of tools for handling panel data</description>
 <tags>C10</tags>
 <help>
@@ -104,8 +104,7 @@ Parameters
     y        - series, target series
     value    - scalar, Value to search in &quot;y&quot;
     fraction - bool, if TRUE (=1) compute the fraction of observations taking
-               the
-               value &quot;value&quot;, if FALSE (=0, default) compute the number of
+               the value &quot;value&quot;, if FALSE (=0, default) compute the number of
                observations instead.
 
 Returns
