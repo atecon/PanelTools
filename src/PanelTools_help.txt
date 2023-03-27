@@ -2,9 +2,13 @@
 Collection of (hopefully) useful functions for dealing with panel datasets.
 
 
+-------------------
 # Public functions
+-------------------
 
-## pcum(const series y)
+#======================
+# pcum(const series y)
+#======================
 Compute cumulated value for each panel unit.
 
 Parameters
@@ -15,7 +19,9 @@ Series with cumulated sum for each cross-sectional unit. NAs are replaced by
 zero before cumulating.
 
 
-## pmode(const series y)
+#======================
+# pmode(const series y)
+#======================
 Compute most frequent value for each cross-sectional unit.
 
 Parameters
@@ -27,7 +33,9 @@ ignored. If all values are NA for a unit, a series consisting only NA values is
 returned for that unit.
 
 
-## pfirst(const series y)
+#=======================
+# pfirst(const series y)
+#=======================
 Compute first valid value for each panel unit.
 
 Parameters
@@ -38,7 +46,9 @@ Series with the first valid value of "y" for each cross-sectional unit. If no
 valid values exists for a unit, NA is returned.
 
 
-## plast(const series y)
+#======================
+# plast(const series y)
+#======================
 Compute last valid value for each panel unit.
 
 Parameters
@@ -48,8 +58,9 @@ Returns
 Series with the last valid value of "y" for each cross-sectional unit. If no
 valid values exists for a unit, NA is returned.
 
-
-## pquantile(const series y, const scalar value "p-th quantile")
+#==============================================================
+# pquantile(const series y, const scalar value "p-th quantile")
+#==============================================================
 Compute the p-th quantile for each unit.
 
 Parameters
@@ -61,8 +72,9 @@ Series with the p-th quantile for each cross-sectional unit. NA values are
 ignored. If all values are NA for a unit, a series consisting only NA values
 is returned for that unit.
 
-
-## pxquantile(const series y, const scalar value "p-th quantile")
+#================================================================
+# pxquantile(const series y, const scalar value "p-th quantile")
+#================================================================
 Compute the p-th quantile for each time period across all units.
 
 Parameters
@@ -74,8 +86,9 @@ Series with the p-th quantile for each time period across-sectional units.
 NA values are ignored. If all values are NA for a unit, a series consisting
 only NA values is returned for that unit.
 
-
-## pxmean(const series y)
+#=======================
+# pxmean(const series y)
+#=======================
 Compute mean value of "y" across all units per
 time period. Missing values are ignored for computing the mean.
 
@@ -85,9 +98,10 @@ Returns
 Series with the mean value value across all units per observation. NA values are
 completely ignored and are not counted.
 
-
-## pxfraction(const series y, const scalar value "Value to search",
-              const bool fraction[FALSE] "Fraction instead of total number")
+#==========================================================================
+# pxfraction(const series y, const scalar value "Value to search",
+             const bool fraction[FALSE] "Fraction instead of total number")
+#==========================================================================
 Compute the total number of observations of "value" in "y" across all units per
 time period. Missing values are completely ignored.
 
@@ -99,11 +113,13 @@ Parameters
                observations instead.
 
 Returns
-Series with the respective value across all units per observation. NA values are
-completely ignored and are not counted.
+Series with the respective value across all units per observation. NA values
+are completely ignored and are not counted.
 
 
-## ppolyfit(const series y, const int order[1::])
+#===============================================
+# ppolyfit(const series y, const int order[1::])
+#===============================================
 Fits a polynomial trend of order "order" to the input series "y" using OLS for
 each cross-sectional unit separately. This function mimics gretl's built-in
 function polyfit() which works only for time-series data correctly before
@@ -117,15 +133,17 @@ Returns
 Series of fitted values for each unit. In case 'y' has missing values for a
 specific unit, for this unit a time-series with NAs is returned.
 
-
-## panelinfo()
+#=============
+# panelinfo()
+#=============
 Compute basic information about the panel dimension.
 
 Returns
 Nothing.
 
-
-## mpmean(const matrix m, const int N)
+#====================================
+# mpmean(const matrix m, const int N)
+#====================================
 Compute vector of mean values of "m" for each cross-sectional unit. Matrix
 equivalent to gretl's built-in pmean() function. Missing values are ignored.
 
@@ -138,8 +156,9 @@ Matrix of stacked time-series of means of "m" for each unit. NA values are
 completely ignored.
 
 
-
-## fe_estimator (const matrix y, const matrix X, const int N[1::])
+#================================================================
+# fe_estimator (const matrix y, const matrix X, const int N[1::])
+#================================================================
 Matrix-based equivalent of gretl's built-in fixed-effect panel estimator
 (see 'help panel'). Currently no inference is done.
 
@@ -149,11 +168,12 @@ Parameters
     N        - integer, Number of cross-sectional units
 
 Returns
-Bundle object comprising both point estimates of coefficients (key: "coeff") and
-estimated fixed-effects stored as stacked time-series (key: "ahat").
+Bundle object comprising both point estimates of coefficients (key: "coeff")
+and estimated fixed-effects stored as stacked time-series (key: "ahat").
 
-
-## pols_estimator (const matrix y, const matrix X, const int N[1::])
+#==================================================================
+# pols_estimator (const matrix y, const matrix X, const int N[1::])
+#==================================================================
 Matrix-based equivalent of gretl's built-in pooled ols function (see 'help
 panel').
 
@@ -166,13 +186,16 @@ Returns
 Bundle object comprising point estimates of coefficients (key: "coeff").
 
 
-## pfcast (const matrix X, const bundle Model, const bool verbose[FALSE])
+#=======================================================================
+# pfcast (const matrix X, const bundle Model, const bool verbose[FALSE])
+#=======================================================================
 Compute static predictions for a given model. For the fixed-effects, the
 fixed-effects are added. This is the same treatment as gretl does for the panel
 fixed-effects model when applying the 'fcast' command.
 
 Parameters
-    X        - matrix, Matrix of regressors of stacked time-series for test set.
+    X        - matrix, Matrix of regressors of stacked time-series for test
+               set.
     Model    - bundle, Model object holding information on estimation results
     verbose  - bool, print details (optional, default = FALSE)
 
@@ -182,7 +205,9 @@ parameter "horizon" is internally determined by the input dimension of "X" and
 the number of cross-sectional units "N" as specified in the "Model" bundle.
 
 
-## mean_robust (const matrix X)
+#=============================
+# mean_robust (const matrix X)
+#=============================
 Works as gretl's built-in function meanc(). Compute mean values for each column
 even in case of missing values.
 
@@ -192,7 +217,9 @@ Parameters
 Returns
 Row vector with mean values for each column.
 
-## sdc_robust (const matrix X)
+#============================
+# sdc_robust (const matrix X)
+#============================
 Works as gretl's built-in function sdc(). Compute standard deviation for each
 column even in case of missing values.
 
@@ -203,9 +230,11 @@ Returns
 Row vector with standard deviation values for each column.
 
 
-## panplot_quantile(const series y,
-                    const bool do_pxquantile[FALSE],
-                    bundle self[null])
+#===================================================
+# panplot_quantile(const series y,
+                   const bool do_pxquantile[FALSE],
+                   bundle self[null])
+#===================================================
 Plot quantiles over time.
 
 Parameters
@@ -219,6 +248,7 @@ Parameters
                     string filename = "display"  (immediately show on screen)
                     string key_position = "top left"
                     string title = ""
+                    string noenhanced = "noenhanced"
                     string ylabel = ""
                     string xlabel = ""
                     scalar yrange_min = NA  (automatically set)
@@ -229,26 +259,28 @@ Parameters
                     matrix quantiles = {0.05, 0.5, 0.95}
 
 Returns
-Nothing.
+FALSE if no error occurs, otherwise TRUE.
 
 
 # Changelog
 ===========
+v0.5 (03-2023)
+ - panplot_quantile() now returns an error value
+ - Add new optional parameter "noenhanced" for panplot_quantile() for deciding
+   whether to consider "_" (underscores) in labels and the titles (default) or
+   not
 v0.4 (10-2022)
-- add new pxquantile() function
-- add new panplot_quantile() function
-
+ - add new pxquantile() function
+ - add new panplot_quantile() function
 v0.3 (03-2022)
-- Add new functions mpmean(), meanc_robust() and sdc_robust()
-- Add new function fe_estimator() for estimating a fixed-effects model using
-  matrices as inputs (no inference supported, yet)
-- Add new function pols_estimator() for estimating a pooled-OLS model using
-  matrices as inputs
-- Add new function pfcast() for computing predictions using some supported
-  panel model using matrices.
-
+ - Add new functions mpmean(), meanc_robust() and sdc_robust()
+ - Add new function fe_estimator() for estimating a fixed-effects model using
+   matrices as inputs (no inference supported, yet)
+ - Add new function pols_estimator() for estimating a pooled-OLS model using
+   matrices as inputs
+ - Add new function pfcast() for computing predictions using some supported
+   panel model using matrices.
 v0.2 (07-2021)
-- Add new ppolyfit() function
-
+ - Add new ppolyfit() function
 v0.1 (07-2021)
-- Initial version
+ - Initial version

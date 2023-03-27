@@ -318,6 +318,7 @@ function bundle panplot_defaults (const series y)
     string self.title = ""
     string self.ylabel = ""
     string self.xlabel = ""
+    string self.noenhanced = "noenhanced"
     scalar miny = min(y)
     scalar self.yrange_min = NA # miny >= 0 ? (miny * 0.95) : -(abs(miny) * 0.95)
     scalar self.yrange_max = NA # max(y) * 1.05
@@ -351,10 +352,11 @@ function string yrange_string (const bundle self)
 end function
 
 
-function void panplot_quantile (const series y,
-                                const bool do_pxquantile[FALSE],
-                                bundle self[null])
-    /* Plot quantiles of cross-section dimension over time. */
+function scalar panplot_quantile (const series y,
+                                  const bool do_pxquantile[FALSE],
+                                  bundle self[null])
+    /* Plot quantiles of cross-section dimension over time.
+    return: FALSE if no error occurs, otherwise TRUE. */
 
     errorif(!$datatype == 3, "You need a panel dataset.")
 
@@ -387,7 +389,8 @@ function void panplot_quantile (const series y,
     endloop
 
     if nelem(L) == 0
-        print "WARNING: Nothing to plot due to missing values."
+        print "ERROR: Nothing to plot due to missing values."
+        return TRUE
     else
         string filename = self.filename
         string options_cmd = "options with-lines single-yaxis time-series "
@@ -399,14 +402,16 @@ function void panplot_quantile (const series y,
             printf "set key %s font ',%d'", self.key_position, self.fontsize
             literal set grid
             printf "%s", get_line_options(self)
-            printf "set title \"%s\" font \", %d\"", self.title, self.fontsize
-            printf "set ylabel \"%s\" font \", %d\"", self.ylabel, self.fontsize
-            printf "set xlabel \"%s\" font \", %d\"", self.xlabel, self.fontsize
+            printf "set title \"%s\" font \", %d\" %s", self.title, self.fontsize, self.noenhanced
+            printf "set ylabel \"%s\" font \", %d\" %s", self.ylabel, self.fontsize, self.noenhanced
+            printf "set xlabel \"%s\" font \", %d\" %s", self.xlabel, self.fontsize, self.noenhanced
             printf "set xtics font \", %d\"", self.fontsize_tics
             printf "set ytics font \", %d\"", self.fontsize_tics
             printf "%s", yrange_cmd
         end plot --output="@filename"
     endif
+
+    return FALSE
 end function
 
 function string get_line_options (const bundle self)
