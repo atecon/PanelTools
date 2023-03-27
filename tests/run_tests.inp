@@ -344,8 +344,8 @@ open grunfeld --quiet
 panplot_quantile(invest, FALSE, _(filename = "pquantile.png"))
 panplot_quantile(invest, TRUE, _(quantiles = {0.15, 0.5, 0.81},
                                  filename = "pxquantile.png",
-                                 options_string = "ylogscale")\
-                )
+                                 options_string = "set logscale y 2")\
+                 )
 
 
 

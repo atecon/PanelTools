@@ -278,6 +278,8 @@ v0.5 (03-2023)
  - Add new optional parameter &quot;noenhanced&quot; for panplot_quantile() for deciding
    whether to consider &quot;_&quot; (underscores) in labels and the titles (default) or
    not
+ - Bugfix: Parameter &quot;options_string&quot; did not work before for
+   panplot_quantile()
 v0.4 (10-2022)
  - add new pxquantile() function
  - add new panplot_quantile() function
@@ -758,9 +760,8 @@ if nelem(L) == 0
   return TRUE
 else
   string filename = self.filename
-  string options_cmd = &quot;options with-lines single-yaxis time-series &quot;
-  options_cmd += self.options_string
   string yrange_cmd = yrange_string(self)
+  string options_cmd = &quot;options with-lines single-yaxis time-series&quot;
 
   plot L
     @options_cmd
@@ -773,6 +774,7 @@ else
     printf &quot;set xtics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
     printf &quot;set ytics font \&quot;, %d\&quot;&quot;, self.fontsize_tics
     printf &quot;%s&quot;, yrange_cmd
+    printf &quot;%s&quot;, self.options_string
   end plot --output=&quot;@filename&quot;
 endif
 

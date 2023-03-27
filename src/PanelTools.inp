@@ -393,9 +393,8 @@ function scalar panplot_quantile (const series y,
         return TRUE
     else
         string filename = self.filename
-        string options_cmd = "options with-lines single-yaxis time-series "
-        options_cmd += self.options_string
         string yrange_cmd = yrange_string(self)
+        string options_cmd = "options with-lines single-yaxis time-series"
 
         plot L
             @options_cmd
@@ -408,6 +407,7 @@ function scalar panplot_quantile (const series y,
             printf "set xtics font \", %d\"", self.fontsize_tics
             printf "set ytics font \", %d\"", self.fontsize_tics
             printf "%s", yrange_cmd
+            printf "%s", self.options_string
         end plot --output="@filename"
     endif
 
