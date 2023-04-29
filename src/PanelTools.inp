@@ -401,10 +401,13 @@ function scalar panplot_quantile (const series y,
         string options_cmd = "options fit=none with-lines single-yaxis"
 
         catch series obsdate = $obsdate
-        if $error
+        scalar err = $error
+        if err
             options_cmd += " time-series"
+            string options_timedim = ""
         else
             list L += obsdate
+            string options_timedim = get_options_timedim(self)
         endif
 
         plot L
@@ -419,7 +422,7 @@ function scalar panplot_quantile (const series y,
             printf "set ytics font \", %d\"", self.fontsize_tics
             printf "%s", yrange_cmd
             printf "%s", self.options_string
-            printf "%s", get_options_timedim(self)
+            printf "%s", options_timedim
             printf "set xtics rotate by %d", self.rotate_xtics
             printf "set xtics offset %g,%g", self.offset_xtics_x, self.offset_xtics_y
         end plot --output="@filename"

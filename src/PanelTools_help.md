@@ -270,7 +270,7 @@ Plot quantiles over time.
 
 Supported parameters for `self` are:
 
-- `dateformat`: string (default "%Y-%m") Set date format of xtics
+- `dateformat`: string (default "%Y-%m") Set date format of xtics. Requires that panel-time is set via e.g. `setobs 4 "2010:1" --panel-time`
 - `fontsize`: scalar (default 10)
 - `fontsize_tics`: scalar (default 8)
 - `filename`: string (default "display", immediately show on screen)
