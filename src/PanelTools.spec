@@ -1,7 +1,7 @@
 author = Artur Tarassow
 email = atecon@posteo.de
 version = 0.6
-date = 2023-04-29
+date = 2023-05-02
 description = Collection of tools for handling panel data
 tags = C10
 min-version = 2021a
