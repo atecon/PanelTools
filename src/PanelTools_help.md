@@ -8,7 +8,7 @@ Collection of (hopefully) useful functions for dealing with panel datasets.
 pcum(const series y)
 ```
 
-Compute cumulated value for each panel unit.
+Compute cumulated value for each panel unit. This is an alternative to gretl's built-in `cum()` function which also computes cumulated values for each cross-sectional unit but handles NAs differently (see below).
 
 ## Parameters
 
@@ -16,7 +16,10 @@ Compute cumulated value for each panel unit.
 
 ## Returns
 
-Series with cumulated sum for each cross-sectional unit. NAs are replaced by zero before cumulation.
+Series with cumulated sum for each cross-sectional unit. NAs are replaced by zero before cumulation for each unit.
+
+**Note:** In contrast, gretl's built-in `cum()` function stops computing cumulated values for a unit if the series has NAs between observations.
+
 
 
 ```

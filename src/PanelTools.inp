@@ -1,5 +1,6 @@
 function series pcum (const series y)
-    /* Compute cumulated value for each panel unit.
+    /* Compute cumulated value for each panel unit. Eventual missing values
+    for a unit are replaced by zero.
     return: series, Cumulated sum for each cross-sectional unit. */
 
     set skip_missing off
