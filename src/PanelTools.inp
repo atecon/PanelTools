@@ -332,6 +332,8 @@ function bundle panplot_defaults (const series y)
     scalar self.rotate_xtics = 0
     scalar self.offset_xtics_x = 0
     scalar self.offset_xtics_y = 0
+    scalar self.band_width = 10
+    scalar self.band_transparency = 70
 
     return self
 end function
@@ -399,7 +401,23 @@ function scalar panplot_quantile (const series y,
     else
         string filename = self.filename
         string yrange_cmd = yrange_string(self)
-        string options_cmd = "options fit=none with-lines single-yaxis"
+        string options_cmd = "options fit=none with-lines"
+
+        # Exogenous
+        scalar self.pos_exogenous = get_position_exogenous(self)
+        if inbundle(self, "exogenous")
+            series X = self.exogenous
+            L += X
+        endif
+
+        # recession bars
+        if inbundle(self, "band")
+            string options_cmd ~= " with-impulses=area"
+            series area = self.band
+            L += area
+        else
+            string options_cmd ~= " single-yaxis"
+        endif
 
         catch series obsdate = $obsdate
         scalar err = $error
@@ -411,11 +429,16 @@ function scalar panplot_quantile (const series y,
             string options_timedim = get_options_timedim(self)
         endif
 
+        # TODO: retrieve name of series passed for band and exogenous
+        # TODO: Add options for dashed lines e.g. band_dashed = TRUE
+
         plot L
             @options_cmd
             printf "set key %s font ',%d'", self.key_position, self.fontsize
             literal set grid
             printf "%s", get_line_options(self)
+            printf "%s", get_line_options_exogenous(self)
+            printf "%s", get_line_options_band(self)
             printf "set title \"%s\" font \", %d\" %s", self.title, self.fontsize, self.noenhanced
             printf "set ylabel \"%s\" font \", %d\" %s", self.ylabel, self.fontsize, self.noenhanced
             printf "set xlabel \"%s\" font \", %d\" %s", self.xlabel, self.fontsize, self.noenhanced
@@ -431,6 +454,32 @@ function scalar panplot_quantile (const series y,
 
     return FALSE
 end function
+
+function scalar get_position_exogenous (const bundle self)
+    /* Return the position of the exogenous (rank in list "L" outside the function). */
+
+    scalar position = 0
+
+    if inbundle(self, "exogenous")
+        position = 1 + nelem(self.quantiles)
+    endif
+
+    return position
+end function
+
+
+function scalar get_position_band (const bundle self)
+    /* Return the position of the recession plot series (rank in list "L" outside the function). */
+
+    scalar position = 1 + nelem(self.quantiles)
+
+    if inbundle(self, "exogenous")
+        position++  # recession bar ranks behind the exogenous series
+    endif
+
+    return position
+end function
+
 
 function string get_options_timedim (const bundle self)
     /* Compile gnuplot code for setting xtics in date format. */
@@ -453,6 +502,38 @@ function string get_line_options (const bundle self)
 
     return ret
 end function
+
+
+function string get_line_options_exogenous (const bundle self)
+    /* Compile the gnuplot command string for the optional exogenous series.
+    return: string */
+
+    if inbundle(self, "exogenous")
+        string ret = sprintf("set linetype %d lw %g\n", self.pos_exogenous,
+                         self.linewidth)
+    else
+        string ret = ""
+    endif
+
+    return ret
+end function
+
+
+function string get_line_options_band (const bundle self)
+    /* Compile the gnuplot command string for the optional band series (recession bars).
+    return: string */
+
+    if inbundle(self, "band")
+        string ret = sprintf("set linetype %d lw %g lc rgb '#%dD3D3D3'\n",
+                             get_position_band(self), self.band_width,
+                             self.band_transparency)
+    else
+        string ret = ""
+    endif
+
+    return ret
+end function
+
 
 
 function matrix meanc_robust (const matrix X)

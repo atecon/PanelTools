@@ -289,6 +289,10 @@ Supported parameters for `self` are:
 - `yrange_min`: scalar (default `NA` (automatically set))
 - `yrange_max`: scalar (default `NA` (automatically set))
 - `quantiles`: matrix (default {0.05, 0.5, 0.95})
+- `band`: series, Add “recession bars” to a plot. Series with values 0 and 1, where 1 indicates “on” and 0 “off” (drawn on left hand-side y-axis)
+- `band_transparency`: int, Degree of transparency of the `band` series between 01 and 99 (default: 70)
+- `band_width`: int, Width of vertical lines for `band` series (default: 10)
+- `exogenous`: list, Series to add to plot and for which no quantiles are computed  (drawn on left right-side y-axis)
 
 ## Returns
 
