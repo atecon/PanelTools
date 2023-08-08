@@ -334,6 +334,10 @@ function bundle panplot_defaults (const series y)
     scalar self.offset_xtics_y = 0
     scalar self.band_width = 10
     scalar self.band_transparency = 70
+    string self.band_label = "band"
+    string self.exogenous_label = "exog"
+    scalar self.exogenous_dashtype = 1
+    string self.exogenous_color = "black"
 
     return self
 end function
@@ -406,15 +410,19 @@ function scalar panplot_quantile (const series y,
         # Exogenous
         scalar self.pos_exogenous = get_position_exogenous(self)
         if inbundle(self, "exogenous")
-            series X = self.exogenous
-            L += X
+            series exog = self.exogenous
+            string exogenous_label = self.exogenous_label
+            setinfo exog --graph-name="@exogenous_label"
+            L += exog
         endif
 
         # recession bars
         if inbundle(self, "band")
-            string options_cmd ~= " with-impulses=area"
-            series area = self.band
-            L += area
+            string options_cmd ~= " with-impulses=band"
+            series band = self.band
+            string band_label = self.band_label
+            setinfo band --graph-name="@band_label"
+            L += band
         else
             string options_cmd ~= " single-yaxis"
         endif
@@ -428,9 +436,6 @@ function scalar panplot_quantile (const series y,
             list L += obsdate
             string options_timedim = get_options_timedim(self)
         endif
-
-        # TODO: retrieve name of series passed for band and exogenous
-        # TODO: Add options for dashed lines e.g. band_dashed = TRUE
 
         plot L
             @options_cmd
@@ -509,8 +514,11 @@ function string get_line_options_exogenous (const bundle self)
     return: string */
 
     if inbundle(self, "exogenous")
-        string ret = sprintf("set linetype %d lw %g\n", self.pos_exogenous,
-                         self.linewidth)
+        string ret = sprintf("set linetype %d lw %g dashtype %d lc rgb '%s'\n",
+                             self.pos_exogenous,
+                             self.linewidth,
+                             self.exogenous_dashtype,
+                             self.exogenous_color)
     else
         string ret = ""
     endif

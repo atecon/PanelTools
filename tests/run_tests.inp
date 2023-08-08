@@ -354,14 +354,18 @@ panplot_quantile(invest, FALSE, _(filename = "pquantile_recession_bars.png",
                                   band_width = 20,
                                   band_transparency = 90))
 
+
 series dum = time >= 5 && time <= 10
-series invest_pmean = mean(invest)
+series invest_pmean = pxmean(invest)
 panplot_quantile(invest, FALSE, _(filename = "pquantile_recession_bars_exogenous.png",
                                   band = dum,
                                   band_width = 20,
-                                  exogenous = invest_pmean))
+                                  band_label = "some vertical bars",
+                                  exogenous = invest_pmean,
+                                  exogenous_label = "some exogenous",
+                                  exogenous_dashtype = 2,
+                                  key_position = "bottom right"))
 
-stop
 
 
 bundles Params = null

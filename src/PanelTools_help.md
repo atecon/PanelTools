@@ -292,7 +292,13 @@ Supported parameters for `self` are:
 - `band`: series, Add “recession bars” to a plot. Series with values 0 and 1, where 1 indicates “on” and 0 “off” (drawn on left hand-side y-axis)
 - `band_transparency`: int, Degree of transparency of the `band` series between 01 and 99 (default: 70)
 - `band_width`: int, Width of vertical lines for `band` series (default: 10)
-- `exogenous`: list, Series to add to plot and for which no quantiles are computed  (drawn on left right-side y-axis)
+- `band_label`: string, Label the series of vertical bars (default: "band")
+- `exogenous`: series, Series to add to plot and for which no quantiles are computed
+- `exogenous_label`: string, Label for the exogenous series (default: "exog")
+- `exogenous_dashtype`: int, Non-negative integer for controlling the dashtype (default: 1 (solid line)); see here: https://gnuplot.sourceforge.net/demo/dashtypes.html
+- `exogenous_color`: string, Color of exogenous series (default: "black")
+
+
 
 ## Returns
 
@@ -300,6 +306,9 @@ FALSE if no error occurs, otherwise TRUE.
 
 
 # Changelog
+
+* **v0.7 (August 2023)**
+    * Implement support for recession bars and plotting an 'exogenous' series for the `panplot_quantile()` function.
 
 * **v0.6 (April 2023)**
     * Print dates on x-axis for the `panplot_quantile()` function when the accessor `$obsdate` is available (panel time must be set)
