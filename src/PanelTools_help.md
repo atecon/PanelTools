@@ -338,8 +338,9 @@ FALSE if no error occurs, otherwise TRUE.
 
 # Changelog
 
-* **v0.7 (August 2023)**
+* **v0.7 (October 2023)**
     * Implement support for recession bars and plotting an 'exogenous' series for the `panplot_quantile()` function.
+    * Add new functions `pxmin()` and `pxmax()` functions
 
 * **v0.6 (April 2023)**
     * Print dates on x-axis for the `panplot_quantile()` function when the accessor `$obsdate` is available (panel time must be set)
