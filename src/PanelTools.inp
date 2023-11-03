@@ -240,6 +240,44 @@ function series pxmean (const series y)
 end function
 
 
+function series pxmin (const series y)
+    /* Compute the minimum for each time-period across all
+     cross-sectional units. Missing values are ignored. Even if 'y' is
+     missing for some unit-obs. combination, we are going to insert a value. */
+
+    errorif($datatype != 3, "Only for panel dataset.")
+
+    matrix m = mshape({y}, $pd, $nobs/$pd) # N x T
+    m = minr(m, TRUE)
+
+    series ret = pexpand(m, TRUE)
+
+    string desc = get_description("pxmin", argname(y), -1)
+    setinfo ret --description="@desc"
+
+    return ret
+end function
+
+
+function series pxmax (const series y)
+    /* Compute the maximum for each time-period across all
+     cross-sectional units. Missing values are ignored. Even if 'y' is
+     missing for some unit-obs. combination, we are going to insert a value. */
+
+    errorif($datatype != 3, "Only for panel dataset.")
+
+    matrix m = mshape({y}, $pd, $nobs/$pd) # N x T
+    m = maxr(m, TRUE)
+
+    series ret = pexpand(m, TRUE)
+
+    string desc = get_description("pxmax", argname(y), -1)
+    setinfo ret --description="@desc"
+
+    return ret
+end function
+
+
 function void panelinfo (void)
     printf "\nINFO: Information on panel dimensions:\n"
     printf "Number of cross-sectional units = %d\n", ($nobs / $pd)

@@ -294,6 +294,55 @@ function void test_pmode (const series input, const series expected)
 end function
 test_pmode(y, expected)
 
+
+nulldata 12 --preserve
+setobs 3 1:1 --stacked-time-series
+series y = {1; 2; 3;\
+            3; NA; 1;\
+            NA; 2; 1;\
+            NA; NA; NA\
+            }
+series expected = {3; 3; 3;\
+                   3; 3; 3;\
+                   2; 2; 2;\
+                   NA; NA; NA\
+                   }
+function void test_pxmax (const series input, const series expected)
+    print "Start testing function pxmax()."
+
+    series actual = pxmax(input)
+    series d = actual - expected
+
+    # Then
+    assert(sum(abs(d)) == 0)
+end function
+test_pxmax(y, expected)
+
+
+nulldata 12 --preserve
+setobs 3 1:1 --stacked-time-series
+series y = {1; 2; 3;\
+            3; NA; 1;\
+            NA; 2; 1;\
+            NA; NA; NA\
+            }
+series expected = {1; 1; 1;\
+                   1; 1; 1;\
+                   2; 2; 2;\
+                   NA; NA; NA\
+                   }
+function void test_pxmin (const series input, const series expected)
+    print "Start testing function pxmin()."
+
+    series actual = pxmin(input)
+    series d = actual - expected
+
+    # Then
+    assert(sum(abs(d)) == 0)
+end function
+test_pxmin(y, expected)
+
+
 # TODO: Could test the printed output
 open grunfeld.gdt -q -p
 panelinfo()
