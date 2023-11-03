@@ -103,7 +103,7 @@ Series with the p-th quantile for each time period across-sectional units. `NA` 
 pxmean(const series y)
 ```
 
-Compute mean value of `y` across all units per time period. Missing values are ignored for computing the mean.
+Compute the mean value of `y` across all units per time period. Missing values are ignored for computing the mean.
 
 ## Parameters
 
@@ -112,6 +112,37 @@ Compute mean value of `y` across all units per time period. Missing values are i
 ## Returns
 
 Series with the mean value value across all units per observation. `NA` values are completely ignored and are not counted.
+
+
+```
+pxmax(const series y)
+```
+
+Compute the maximum value of `y` across all units per time period. Missing values in the cross-section for some unit are ignored for computing the maximum.
+
+## Parameters
+
+- `y`, series, target series
+
+## Returns
+
+Series with the maximum value across all units grouped by observation. `NA` values are completely ignored and are not counted.
+
+
+```
+pxmin(const series y)
+```
+
+Compute the minimum value of `y` across all units per time period. Missing values in the cross-section for some unit are ignored for computing the minimum.
+
+## Parameters
+
+- `y`, series, target series
+
+## Returns
+
+Series with the minimum value across all units grouped by observation. `NA` values are completely ignored and are not counted.
+
 
 ```
 pxfraction(const series y, const scalar value "Value to search",
@@ -307,8 +338,9 @@ FALSE if no error occurs, otherwise TRUE.
 
 # Changelog
 
-* **v0.7 (August 2023)**
+* **v0.7 (October 2023)**
     * Implement support for recession bars and plotting an 'exogenous' series for the `panplot_quantile()` function.
+    * Add new functions `pxmin()` and `pxmax()` functions
 
 * **v0.6 (April 2023)**
     * Print dates on x-axis for the `panplot_quantile()` function when the accessor `$obsdate` is available (panel time must be set)
