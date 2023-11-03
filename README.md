@@ -338,7 +338,7 @@ FALSE if no error occurs, otherwise TRUE.
 
 # Changelog
 
-* **v0.7 (October 2023)**
+* **v0.7 (November 2023)**
     * Implement support for recession bars and plotting an 'exogenous' series for the `panplot_quantile()` function.
     * Add new functions `pxmin()` and `pxmax()` functions
 
